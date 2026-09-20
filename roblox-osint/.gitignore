@@ -1,0 +1,36 @@
+# Virtual env
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+
+# Data & output
+data/cache/*
+data/output/*
+logs/*
+*.log
+
+# Tool lokal (jangan upload)
+check_all.sh
+install.sh
+
+# Env & secrets
+.env
+.env.local
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

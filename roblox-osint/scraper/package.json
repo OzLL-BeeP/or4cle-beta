@@ -1,0 +1,16 @@
+{
+  "name": "roblox-osint-scraper",
+  "version": "2.0.0",
+  "description": "Playwright-based browser scraper for Roblox-OSINT",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test/smoke.js"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "cheerio": "^1.0.0-rc.12",
+    "commander": "^11.0.0"
+  }
+}
