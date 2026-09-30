@@ -37,7 +37,8 @@ return function(sidebar, config, tabNames, onSwitch)
         })
         U.corner(btn, 6)
 
-        btn.TextLabel = U.label(btn, {
+        -- bikin TextLabel sebagai child, simpen referensinya
+        local textLabel = U.label(btn, {
             Size = UDim2.new(1, -16, 1, 0),
             Position = UDim2.fromOffset(8, 0),
             Text = string.upper(tabName),
@@ -45,8 +46,9 @@ return function(sidebar, config, tabNames, onSwitch)
             Font = Enum.Font.GothamBold,
             TextSize = 11,
         })
+        btn.TextLabel = textLabel  -- assign custom property
 
-        btn.Underline = U.new("Frame", {
+        local underline = U.new("Frame", {
             Size = UDim2.new(0, 0, 0, 2),
             Position = UDim2.new(0, 8, 1, -6),
             BackgroundColor3 = U.rgb3(config.AccentA),
@@ -54,16 +56,17 @@ return function(sidebar, config, tabNames, onSwitch)
             BorderSizePixel = 0,
             Parent = btn,
         })
-        U.corner(btn.Underline, 1)
+        U.corner(underline, 1)
+        btn.Underline = underline
 
         btn.MouseEnter:Connect(function()
             if active ~= tabName then
-                U.tween(btn.TextLabel, { TextColor3 = U.rgb3(config.Text) }, 0.12, "inout")
+                U.tween(textLabel, { TextColor3 = U.rgb3(config.Text) }, 0.12, "inout")
             end
         end)
         btn.MouseLeave:Connect(function()
             if active ~= tabName then
-                U.tween(btn.TextLabel, { TextColor3 = U.rgb3(config.TextDim) }, 0.12, "inout")
+                U.tween(textLabel, { TextColor3 = U.rgb3(config.TextDim) }, 0.12, "inout")
             end
         end)
         btn.MouseButton1Click:Connect(function() show(tabName) end)
@@ -71,6 +74,14 @@ return function(sidebar, config, tabNames, onSwitch)
         buttons[tabName] = btn
     end
 
-    show(tabNames[1])
+    task.defer(function()
+        local first = buttons[tabNames[1]]
+        if first then
+            first.TextLabel.TextColor3 = U.rgb3(config.AccentA)
+            first.Underline.BackgroundTransparency = 0
+            first.Underline.Size = UDim2.new(1, -16, 0, 2)
+        end
+    end)
+
     return buttons, show
 end
