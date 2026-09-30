@@ -14,8 +14,9 @@ return function(parent, config, y, label, callback)
     U.corner(btn, config.RadiusButton)
     U.stroke(btn, U.rgb3(config.BorderSubtle), 1)
 
-    U.label(btn, {
-        Size = UDim2.new(1, -16, 1, 0),
+    -- simpen referensi TextLabel ke btn
+    btn.TextLabel = U.label(btn, {
+        Size = UDim2.new(1, -40, 1, 0),
         Position = UDim2.fromOffset(14, 0),
         Text = label,
         TextSize = config.FontLabel,
