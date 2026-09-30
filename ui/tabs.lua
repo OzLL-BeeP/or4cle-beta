@@ -7,9 +7,9 @@ return function(sidebar, config, tabNames, onSwitch)
     local function show(name)
         active = name
         for n, b in pairs(buttons) do
-            if b.TextLabel then
+            if b.TabText then
                 if n == name then
-                    U.tween(b.TextLabel, { TextColor3 = U.rgb3(config.AccentA) }, 0.15, "inout")
+                    U.tween(b.TabText, { TextColor3 = U.rgb3(config.AccentA) }, 0.15, "inout")
                     if b.Underline then
                         U.tween(b.Underline, {
                             BackgroundTransparency = 0,
@@ -17,7 +17,7 @@ return function(sidebar, config, tabNames, onSwitch)
                         }, 0.15, "inout")
                     end
                 else
-                    U.tween(b.TextLabel, { TextColor3 = U.rgb3(config.TextDim) }, 0.15, "inout")
+                    U.tween(b.TabText, { TextColor3 = U.rgb3(config.TextDim) }, 0.15, "inout")
                     if b.Underline then
                         U.tween(b.Underline, {
                             BackgroundTransparency = 1,
@@ -51,7 +51,7 @@ return function(sidebar, config, tabNames, onSwitch)
             Font = Enum.Font.GothamBold,
             TextSize = 11,
         })
-        btn.TextLabel = textLabel
+        btn.TabText = textLabel
 
         local underline = U.new("Frame", {
             Size = UDim2.new(0, 0, 0, 2),
@@ -65,13 +65,13 @@ return function(sidebar, config, tabNames, onSwitch)
         btn.Underline = underline
 
         btn.MouseEnter:Connect(function()
-            if active ~= tabName and btn.TextLabel then
-                U.tween(btn.TextLabel, { TextColor3 = U.rgb3(config.Text) }, 0.12, "inout")
+            if active ~= tabName then
+                U.tween(textLabel, { TextColor3 = U.rgb3(config.Text) }, 0.12, "inout")
             end
         end)
         btn.MouseLeave:Connect(function()
-            if active ~= tabName and btn.TextLabel then
-                U.tween(btn.TextLabel, { TextColor3 = U.rgb3(config.TextDim) }, 0.12, "inout")
+            if active ~= tabName then
+                U.tween(textLabel, { TextColor3 = U.rgb3(config.TextDim) }, 0.12, "inout")
             end
         end)
         btn.MouseButton1Click:Connect(function() show(tabName) end)
@@ -81,8 +81,8 @@ return function(sidebar, config, tabNames, onSwitch)
 
     task.defer(function()
         local first = buttons[tabNames[1]]
-        if first and first.TextLabel then
-            first.TextLabel.TextColor3 = U.rgb3(config.AccentA)
+        if first and first.TabText then
+            first.TabText.TextColor3 = U.rgb3(config.AccentA)
             if first.Underline then
                 first.Underline.BackgroundTransparency = 0
                 first.Underline.Size = UDim2.new(1, -16, 0, 2)

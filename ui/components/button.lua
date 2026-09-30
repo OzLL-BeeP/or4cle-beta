@@ -14,8 +14,7 @@ return function(parent, config, y, label, callback)
     U.corner(btn, config.RadiusButton)
     U.stroke(btn, U.rgb3(config.BorderSubtle), 1)
 
-    -- simpen referensi TextLabel ke btn
-    btn.TextLabel = U.label(btn, {
+    btn.TabText = U.label(btn, {
         Size = UDim2.new(1, -40, 1, 0),
         Position = UDim2.fromOffset(14, 0),
         Text = label,
@@ -25,7 +24,7 @@ return function(parent, config, y, label, callback)
     U.label(btn, {
         Size = UDim2.fromOffset(20, 1),
         Position = UDim2.new(1, -30, 0, 0),
-        Text = "→",
+        Text = "->",
         TextColor3 = U.rgb3(config.TextMuted),
         Font = Enum.Font.GothamBold,
         TextSize = 14,

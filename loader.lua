@@ -79,8 +79,8 @@ local function cycleTier()
     tierIdx = tierIdx + 1
     if tierIdx > #tierList then tierIdx = 1 end
     esp.setMinTier(tierList[tierIdx])
-    if tierBtn and tierBtn.TextLabel then
-        tierBtn.TextLabel.Text = "Min Tier: " .. tierList[tierIdx]
+    if tierBtn and tierBtn.TabText then
+        tierBtn.TabText.Text = "Min Tier: " .. tierList[tierIdx]
     end
 end
 
@@ -131,8 +131,8 @@ local hopBtn
 
 local function applyHop()
     hop.setInterval(hopModes[hopIdx])
-    if hopBtn and hopBtn.TextLabel then
-        hopBtn.TextLabel.Text = "Interval: " .. hopModes[hopIdx] .. " menit"
+    if hopBtn and hopBtn.TabText then
+        hopBtn.TabText.Text = "Interval: " .. hopModes[hopIdx] .. " menit"
     end
 end
 
