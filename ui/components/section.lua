@@ -9,7 +9,6 @@ return function(parent, config, y, title)
         Parent = parent,
     })
 
-    -- TextLabel section title
     local label = U.sectionTitle(holder, {
         Size = UDim2.new(1, 0, 0, 20),
         Position = UDim2.fromOffset(0, 0),
@@ -17,7 +16,6 @@ return function(parent, config, y, title)
         TextColor3 = U.rgb3(config.TextDim),
     })
 
-    -- divider
     local line = U.new("Frame", {
         Size = UDim2.new(1, 0, 0, 1),
         Position = UDim2.fromOffset(0, 22),

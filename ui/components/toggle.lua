@@ -2,6 +2,7 @@ local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/o
 
 return function(parent, config, y, label, default, callback)
     local row = U.new("Frame", {
+        Name = "Toggle",
         Size = UDim2.new(1, 0, 0, 34),
         Position = UDim2.fromOffset(0, y),
         BackgroundColor3 = U.rgb3(config.BgCard),
@@ -11,24 +12,27 @@ return function(parent, config, y, label, default, callback)
     })
     U.corner(row, config.RadiusButton)
 
-    U.label(row, {
-        Size = UDim2.new(1, -100, 1, 0),
+    -- TEXT LABEL
+    local textLabel = U.label(row, {
+        Size = UDim2.new(1, -110, 1, 0),
         Position = UDim2.fromOffset(14, 0),
         Text = label,
         TextSize = config.FontLabel,
+        TextColor3 = U.rgb3(config.Text),
     })
 
-    local state = default or false
+    -- ON/OFF indicator
     local statusLbl = U.label(row, {
-        Size = UDim2.fromOffset(50, 1),
+        Size = UDim2.fromOffset(40, 1),
         Position = UDim2.new(1, -100, 0, 0),
-        Text = state and "ON" or "OFF",
-        TextColor3 = state and U.rgb3(config.AccentA) or U.rgb3(config.TextMuted),
+        Text = default and "ON" or "OFF",
+        TextColor3 = default and U.rgb3(config.AccentA) or U.rgb3(config.TextMuted),
         Font = Enum.Font.GothamBold,
         TextSize = 10,
         TextXAlignment = Enum.TextXAlignment.Right,
     })
 
+    local state = default or false
     local track = U.new("Frame", {
         Size = UDim2.fromOffset(38, 20),
         Position = UDim2.new(1, -52, 0.5, -10),
@@ -57,18 +61,18 @@ return function(parent, config, y, label, default, callback)
             U.tween(knob, {
                 Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.fromOffset(3, 3),
             }, 0.22, "spring")
-            U.tween(statusLbl, {
-                TextColor3 = state and U.rgb3(config.AccentA) or U.rgb3(config.TextMuted),
-            }, 0.15, "inout")
             statusLbl.Text = state and "ON" or "OFF"
+            statusLbl.TextColor3 = state and U.rgb3(config.AccentA) or U.rgb3(config.TextMuted)
             if callback then callback(state) end
         end
     end)
+
     row.MouseEnter:Connect(function()
         U.tween(row, { BackgroundTransparency = 0 }, 0.12, "inout")
     end)
     row.MouseLeave:Connect(function()
         U.tween(row, { BackgroundTransparency = 0.3 }, 0.12, "inout")
     end)
-    return row
+
+    return row, textLabel, statusLbl
 end

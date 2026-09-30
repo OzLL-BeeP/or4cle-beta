@@ -1,9 +1,8 @@
 local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/util.lua"))()
 
-local textRefs = {}  -- { [button] = TextLabel }
-
 return function(parent, config, y, label, callback)
     local btn = U.new("TextButton", {
+        Name = "Button",
         Size = UDim2.new(1, 0, 0, 36),
         Position = UDim2.fromOffset(0, y),
         BackgroundColor3 = U.rgb3(config.BgCard),
@@ -16,14 +15,16 @@ return function(parent, config, y, label, callback)
     U.corner(btn, config.RadiusButton)
     U.stroke(btn, U.rgb3(config.BorderSubtle), 1)
 
+    -- TEXT LABEL
     local textLabel = U.label(btn, {
         Size = UDim2.new(1, -40, 1, 0),
         Position = UDim2.fromOffset(14, 0),
         Text = label,
         TextSize = config.FontLabel,
+        TextColor3 = U.rgb3(config.Text),
     })
-    textRefs[btn] = textLabel
 
+    -- arrow
     U.label(btn, {
         Size = UDim2.fromOffset(20, 1),
         Position = UDim2.new(1, -30, 0, 0),
