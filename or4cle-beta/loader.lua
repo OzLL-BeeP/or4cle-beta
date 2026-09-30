@@ -1,23 +1,31 @@
--- OR4CLE entry point
+-- OR4CLE entry point (GitHub-compatible)
+local BASE = "https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/or4cle-beta/"
+
+local function loadModule(path)
+    local code = game:HttpGet(BASE .. path)
+    return loadstring(code)()
+end
+
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local LP = Players.LocalPlayer
 
-local config = require(script.Parent.config)
-local U = require(script.Parent.util)
-local makeRoot = require(script.Parent.root)
-local makeBubble = require(script.Parent.ui.bubble)
-local makeWindow = require(script.Parent.ui.window)
-local makeSidebar = require(script.Parent.ui.sidebar)
-local makeContent = require(script.Parent.ui.content)
-local makeTabs = require(script.Parent.ui.tabs)
-local makeToggle = require(script.Parent.ui.components.toggle)
-local makeButton = require(script.Parent.ui.components.button)
-local makeSection = require(script.Parent.ui.components.section)
+local config   = loadModule("config.lua")
+local U        = loadModule("util.lua")
+local makeRoot = loadModule("root.lua")
+local makeBubble = loadModule("ui/bubble.lua")
+local makeWindow = loadModule("ui/window.lua")
+local makeSidebar = loadModule("ui/sidebar.lua")
+local makeContent = loadModule("ui/content.lua")
+local makeTabs = loadModule("ui/tabs.lua")
+local makeToggle = loadModule("ui/components/toggle.lua")
+local makeButton = loadModule("ui/components/button.lua")
+local makeSection = loadModule("ui/components/section.lua")
 
-local esp = require(script.Parent.modules.esp)
-local teleport = require(script.Parent.modules.teleport)
-local lava = require(script.Parent.modules.lava)
+local esp = loadModule("modules/esp.lua")
+local teleport = loadModule("modules/teleport.lua")
+local lava = loadModule("modules/lava.lua")
+local magma = loadModule("modules/magma_mutation.lua")
 
 local gui = makeRoot()
 
@@ -50,15 +58,15 @@ local _, showTab = makeTabs(sidebar, config, tabs, function(name)
     end
 end)
 
--- Visuals tab
+-- Visuals
 local vTab = getTab("Visuals")
 makeSection(vTab, config, 10, "Egg ESP")
 makeToggle(vTab, config, 40, "Enable Egg ESP", false, function(v)
     espEnabled = v
-    if not v then esp:clear() end
+    if not v then esp.clear() end
 end)
 
--- Farm tab
+-- Farm
 local fTab = getTab("Farm")
 makeSection(fTab, config, 10, "Teleport")
 makeButton(fTab, config, 40, "TP to Nearest Egg", function()
@@ -66,10 +74,14 @@ makeButton(fTab, config, 40, "TP to Nearest Egg", function()
 end)
 makeButton(fTab, config, 80, "Grab Volcanic Egg", function()
     local ok, msg = lava.grab()
-    print(ok, msg)
+    print("[OR4CLE]", ok, msg)
+end)
+makeButton(fTab, config, 120, "Attempt Magma Mutation", function()
+    local ok, msg = magma.attempt()
+    print("[OR4CLE]", ok, msg)
 end)
 
--- Settings tab
+-- Settings
 local sTab = getTab("Settings")
 makeSection(sTab, config, 10, "Info")
 makeButton(sTab, config, 40, "Unload OR4CLE", function()
@@ -140,4 +152,4 @@ game:GetService("RunService").Heartbeat:Connect(function()
     if espEnabled then esp.scan(espFolder) end
 end)
 
-print("OR4CLE loaded")
+print("[OR4CLE] Loaded")
