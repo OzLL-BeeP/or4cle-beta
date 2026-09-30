@@ -1,0 +1,206 @@
+local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/util.lua"))()
+
+-- opts: { label = "Min Tier: ", options = {...}, colors = {...}, default = "..." }
+return function(parent, config, y, opts, callback)
+    local options = opts.options or {"A", "B", "C"}
+    local colors  = opts.colors or {}
+    local current = opts.default or options[1]
+    local prefix  = opts.label or ""
+
+    local btn = Instance.new("TextButton")
+    btn.Name = "Picker"
+    btn.Size = UDim2.new(1, 0, 0, 36)
+    btn.Position = UDim2.fromOffset(0, y)
+    btn.BackgroundColor3 = Color3.fromRGB(26, 26, 40)
+    btn.BackgroundTransparency = 0.3
+    btn.BorderSizePixel = 0
+    btn.Text = ""
+    btn.AutoButtonColor = false
+    btn.ZIndex = 2
+    btn.Parent = parent
+
+    local bc = Instance.new("UICorner")
+    bc.CornerRadius = UDim.new(0, 8)
+    bc.Parent = btn
+
+    local bs = Instance.new("UIStroke")
+    bs.Color = Color3.fromRGB(42, 42, 63)
+    bs.Thickness = 1
+    bs.Parent = btn
+
+    local label = Instance.new("TextLabel")
+    label.Name = "PickerLabel"
+    label.Size = UDim2.new(1, -60, 1, 0)
+    label.Position = UDim2.fromOffset(14, 0)
+    label.BackgroundTransparency = 1
+    label.Text = prefix .. current
+    label.TextColor3 = Color3.fromRGB(242, 242, 248)
+    label.Font = Enum.Font.GothamMedium
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.Parent = btn
+
+    local chevron = Instance.new("TextLabel")
+    chevron.Size = UDim2.fromOffset(20, 36)
+    chevron.Position = UDim2.new(1, -30, 0, 0)
+    chevron.BackgroundTransparency = 1
+    chevron.Text = "v"
+    chevron.TextColor3 = Color3.fromRGB(158, 158, 184)
+    chevron.Font = Enum.Font.GothamBold
+    chevron.TextSize = 12
+    chevron.Parent = btn
+
+    local rowH = 34
+    local dropH = #options * rowH + 8
+
+    local drop = Instance.new("Frame")
+    drop.Name = "Dropdown"
+    drop.Size = UDim2.new(1, 0, 0, 0)
+    drop.Position = UDim2.fromOffset(0, 40)
+    drop.BackgroundColor3 = Color3.fromRGB(20, 20, 32)
+    drop.BorderSizePixel = 0
+    drop.ClipsDescendants = true
+    drop.Visible = false
+    drop.ZIndex = 10
+    drop.Parent = btn
+
+    local dc = Instance.new("UICorner")
+    dc.CornerRadius = UDim.new(0, 8)
+    dc.Parent = drop
+
+    local ds = Instance.new("UIStroke")
+    ds.Color = Color3.fromRGB(80, 160, 255)
+    ds.Thickness = 1.5
+    ds.Parent = drop
+
+    local scroll = Instance.new("ScrollingFrame")
+    scroll.Size = UDim2.new(1, -8, 1, -8)
+    scroll.Position = UDim2.fromOffset(4, 4)
+    scroll.BackgroundTransparency = 1
+    scroll.BorderSizePixel = 0
+    scroll.ScrollBarThickness = 3
+    scroll.ScrollBarImageColor3 = Color3.fromRGB(80, 160, 255)
+    scroll.CanvasSize = UDim2.new(0, 0, 0, #options * rowH + 4)
+    scroll.ZIndex = 11
+    scroll.Parent = drop
+
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 0)
+    layout.Parent = scroll
+
+    local refs = {}
+
+    local function updateActive()
+        for _, r in ipairs(refs) do
+            if r.value == current then
+                r.btn.TextColor3 = Color3.fromRGB(80, 200, 255)
+                r.line.BackgroundColor3 = Color3.fromRGB(80, 200, 255)
+                r.line.BackgroundTransparency = 0
+                r.btn.Font = Enum.Font.GothamBold
+            else
+                r.btn.TextColor3 = Color3.fromRGB(158, 158, 184)
+                r.line.BackgroundColor3 = Color3.fromRGB(42, 42, 63)
+                r.line.BackgroundTransparency = 0.5
+                r.btn.Font = Enum.Font.GothamMedium
+            end
+        end
+        label.Text = prefix .. current
+    end
+
+    for i, opt in ipairs(options) do
+        local row = Instance.new("Frame")
+        row.Name = "Row_" .. tostring(opt)
+        row.Size = UDim2.new(1, 0, 0, rowH)
+        row.BackgroundTransparency = 1
+        row.LayoutOrder = i
+        row.ZIndex = 11
+        row.Parent = scroll
+
+        local tbtn = Instance.new("TextButton")
+        tbtn.Name = "OptBtn"
+        tbtn.Size = UDim2.new(1, 0, 1, 0)
+        tbtn.BackgroundColor3 = Color3.fromRGB(20, 20, 32)
+        tbtn.BackgroundTransparency = 1
+        tbtn.BorderSizePixel = 0
+        tbtn.Text = tostring(opt)
+        tbtn.TextColor3 = Color3.fromRGB(158, 158, 184)
+        tbtn.Font = Enum.Font.GothamMedium
+        tbtn.TextSize = 13
+        tbtn.TextXAlignment = Enum.TextXAlignment.Left
+        tbtn.AutoButtonColor = false
+        tbtn.ZIndex = 12
+        tbtn.Parent = row
+        local tpad = Instance.new("UIPadding")
+        tpad.PaddingLeft = UDim.new(0, 12)
+        tpad.Parent = tbtn
+
+        local line = Instance.new("Frame")
+        line.Name = "Line"
+        line.Size = UDim2.new(1, -12, 0, 1)
+        line.Position = UDim2.new(0, 6, 1, -1)
+        line.BackgroundColor3 = Color3.fromRGB(42, 42, 63)
+        line.BackgroundTransparency = 0.5
+        line.BorderSizePixel = 0
+        line.ZIndex = 12
+        line.Parent = row
+
+        -- dot warna (kalau ada)
+        if colors[opt] then
+            local dot = Instance.new("Frame")
+            dot.Name = "Dot"
+            dot.Size = UDim2.fromOffset(8, 8)
+            dot.Position = UDim2.new(1, -20, 0.5, -4)
+            dot.BackgroundColor3 = colors[opt]
+            dot.BorderSizePixel = 0
+            dot.ZIndex = 12
+            dot.Parent = row
+            local dcorner = Instance.new("UICorner")
+            dcorner.CornerRadius = UDim.new(1, 0)
+            dcorner.Parent = dot
+        end
+
+        tbtn.MouseEnter:Connect(function()
+            if current ~= opt then
+                tbtn.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+                tbtn.BackgroundTransparency = 0.3
+            end
+        end)
+        tbtn.MouseLeave:Connect(function()
+            tbtn.BackgroundColor3 = Color3.fromRGB(20, 20, 32)
+            tbtn.BackgroundTransparency = 1
+        end)
+        tbtn.MouseButton1Click:Connect(function()
+            current = opt
+            updateActive()
+            if callback then callback(opt) end
+            U.tween(drop, { Size = UDim2.new(1, 0, 0, 0) }, 0.15, "inout")
+            task.wait(0.16)
+            drop.Visible = false
+            chevron.Text = "v"
+            chevron.TextColor3 = Color3.fromRGB(158, 158, 184)
+        end)
+
+        table.insert(refs, { value = opt, btn = tbtn, line = line })
+    end
+
+    updateActive()
+
+    local open = false
+    btn.MouseButton1Click:Connect(function()
+        open = not open
+        if open then
+            drop.Visible = true
+            U.tween(drop, { Size = UDim2.new(1, 0, 0, dropH) }, 0.22, "out")
+            chevron.Text = "^"
+            chevron.TextColor3 = Color3.fromRGB(80, 200, 255)
+        else
+            U.tween(drop, { Size = UDim2.new(1, 0, 0, 0) }, 0.18, "inout")
+            chevron.Text = "v"
+            chevron.TextColor3 = Color3.fromRGB(158, 158, 184)
+            task.wait(0.2)
+            if not open then drop.Visible = false end
+        end
+    end)
+
+    return btn, label, drop
+end

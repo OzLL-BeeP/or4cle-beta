@@ -1,4 +1,4 @@
--- OR4CLE v3 entry
+-- OR4CLE v4 entry
 local BASE = "https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/"
 
 local function loadModule(path)
@@ -19,6 +19,7 @@ local makeTabs    = loadModule("ui/tabs.lua")
 local makeToggle  = loadModule("ui/components/toggle.lua")
 local makeButton  = loadModule("ui/components/button.lua")
 local makeSection = loadModule("ui/components/section.lua")
+local makeOptionPicker = loadModule("ui/components/option_picker.lua")
 
 local esp        = loadModule("modules/esp.lua")
 local teleport   = loadModule("modules/teleport.lua")
@@ -29,6 +30,8 @@ local autoTp     = loadModule("modules/auto_tp_egg.lua")
 local speed      = loadModule("modules/speed_hack.lua")
 local antiAfk    = loadModule("modules/anti_afk.lua")
 local hop        = loadModule("modules/server_hop.lua")
+local autoFarm   = loadModule("modules/auto_farm.lua")
+autoFarm.inject({magma = magma, esp = esp})
 
 local gui = makeRoot()
 local espFolder = Instance.new("Folder")
@@ -73,54 +76,111 @@ task.defer(function()
     refreshTabs("Visuals")
 end)
 
--- VISUALS
+-- ============================================
+-- TAB: VISUALS
+-- ============================================
 local vTab = getTab("Visuals")
+
 makeSection(vTab, config, 0, "EGG ESP")
 makeToggle(vTab, config, 40, "Enable Egg ESP", false, function(v)
     espEnabled = v
     if not v then esp.clear() end
 end)
 
-makeSection(vTab, config, 92, "MIN RARITY")
-local tierList = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
-local tierIdx = 1
-local tierBtn, tierBtnText
+makeSection(vTab, config, 92, "ESP SETTINGS")
+makeToggle(vTab, config, 132, "Show Distance", true, function(v)
+    esp.showDistance = v
+end)
+makeToggle(vTab, config, 176, "Show Tracer", true, function(v)
+    esp.showTracer = v
+end)
 
-local function cycleTier()
-    tierIdx = tierIdx + 1
-    if tierIdx > #tierList then tierIdx = 1 end
-    esp.setMinTier(tierList[tierIdx])
-    if tierBtnText then
-        tierBtnText.Text = "Min Tier: " .. tierList[tierIdx]
-    end
-end
-
-tierBtn, tierBtnText = makeButton(vTab, config, 132, "Min Tier: Common", cycleTier)
-
--- FARM
+-- ============================================
+-- TAB: FARM
+-- ============================================
 local fTab = getTab("Farm")
-makeSection(fTab, config, 0, "TELEPORT")
-makeButton(fTab, config, 40, "TP to Nearest Egg", function()
+
+-- RARITY FILTER
+makeSection(fTab, config, 0, "RARITY FILTER")
+
+local TIER_COLORS = {
+    Common   = Color3.fromRGB(180, 180, 180),
+    Rare     = Color3.fromRGB(80, 160, 255),
+    Epic     = Color3.fromRGB(180, 100, 255),
+    Legend   = Color3.fromRGB(255, 150, 50),
+    Mythic   = Color3.fromRGB(255, 80, 80),
+    Divine   = Color3.fromRGB(255, 215, 0),
+    Ethereal = Color3.fromRGB(255, 100, 255),
+}
+local tierOptions = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
+
+makeOptionPicker(fTab, config, 40, {
+    label = "Min Tier: ",
+    options = tierOptions,
+    colors = TIER_COLORS,
+    default = "Common",
+}, function(tier)
+    esp.setMinTier(tier)
+    autoFarm.setMinTier(tier)
+end)
+
+-- TELEPORT
+makeSection(fTab, config, 92, "TELEPORT")
+makeButton(fTab, config, 132, "TP to Nearest Egg", function()
     teleport.tpNearest()
 end)
-
-makeSection(fTab, config, 92, "AUTO TP TIER DIVINE+")
-makeToggle(fTab, config, 132, "Enable Auto TP Egg", false, function(v)
-    autoTp.toggle(v)
+makeButton(fTab, config, 172, "TP to Highest Tier Egg", function()
+    local best = autoFarm.findBestEggPublic()
+    if best then
+        local base = best:FindFirstChild("EggBase") or best:FindFirstChildWhichIsA("BasePart")
+        if base then
+            local char = Players.LocalPlayer.Character
+            local h = char and char:FindFirstChild("HumanoidRootPart")
+            if h then h.CFrame = base.CFrame + Vector3.new(0, 3, 0) end
+        end
+    end
 end)
 
-makeSection(fTab, config, 184, "VOLCANIC")
-makeButton(fTab, config, 224, "Grab Volcanic Egg", function()
+-- AUTO FARM
+makeSection(fTab, config, 224, "AUTO FARM")
+
+makeToggle(fTab, config, 264, "Enable Auto Farm", false, function(v)
+    autoFarm.toggle(v)
+end)
+
+local modeOptions = {"Teleport", "Idle"}
+makeOptionPicker(fTab, config, 308, {
+    label = "Mode: ",
+    options = modeOptions,
+    default = "Teleport",
+}, function(mode)
+    autoFarm.setMode(mode)
+end)
+
+makeToggle(fTab, config, 356, "Return to Ranch", true, function(v)
+    autoFarm.setReturn(v)
+end)
+
+makeToggle(fTab, config, 400, "Auto Magma Mutation", false, function(v)
+    autoFarm.setMagma(v)
+end)
+
+-- VOLCANIC
+makeSection(fTab, config, 452, "VOLCANIC")
+makeButton(fTab, config, 492, "Grab Volcanic Egg", function()
     local ok, msg = lava.grab()
     print("[OR4CLE]", ok, msg)
 end)
-makeButton(fTab, config, 268, "Attempt Magma Mutation", function()
+makeButton(fTab, config, 532, "Attempt Magma Mutation", function()
     local ok, msg = magma.attempt()
     print("[OR4CLE]", ok, msg)
 end)
 
--- UTILITY
+-- ============================================
+-- TAB: UTILITY
+-- ============================================
 local uTab = getTab("Utility")
+
 makeSection(uTab, config, 0, "MOVEMENT")
 makeToggle(uTab, config, 40, "Speed Hack", false, function(v)
     speed.toggle(v)
@@ -132,35 +192,31 @@ makeToggle(uTab, config, 132, "Anti AFK", false, function(v)
 end)
 
 makeSection(uTab, config, 184, "SERVER HOP")
-local hopModes = {5, 10, 15, 20, 25, 30, 40, 50}
-local hopIdx = 2
-local hopBtn, hopBtnText
 
-local function applyHop()
-    hop.setInterval(hopModes[hopIdx])
-    if hopBtnText then
-        hopBtnText.Text = "Interval: " .. hopModes[hopIdx] .. " menit"
-    end
-end
-
-makeToggle(uTab, config, 224, "Auto Server Hop", false, function(v)
-    if v then applyHop() end
-    hop.toggle(v)
-end)
-
-hopBtn, hopBtnText = makeButton(uTab, config, 268, "Interval: 10 menit", function()
-    hopIdx = hopIdx + 1
-    if hopIdx > #hopModes then hopIdx = 1 end
-    applyHop()
+local hopOptions = {"5 menit","10 menit","15 menit","20 menit","25 menit","30 menit","40 menit","50 menit"}
+makeOptionPicker(uTab, config, 224, {
+    label = "Interval: ",
+    options = hopOptions,
+    default = "10 menit",
+}, function(opt)
+    local mins = tonumber(opt:match("%d+")) or 10
+    hop.setInterval(mins)
     if hop.enabled then hop.stop(); hop.start() end
 end)
 
-makeButton(uTab, config, 312, "Hop Now", function()
+makeToggle(uTab, config, 272, "Auto Server Hop", false, function(v)
+    hop.toggle(v)
+end)
+
+makeButton(uTab, config, 316, "Hop Now", function()
     hop.hop()
 end)
 
--- SETTINGS
+-- ============================================
+-- TAB: SETTINGS
+-- ============================================
 local sTab = getTab("Settings")
+
 makeSection(sTab, config, 0, "PERFORMANCE")
 makeToggle(sTab, config, 40, "FPS Boost", false, function(v)
     fps.toggle(v)
@@ -174,9 +230,12 @@ makeButton(sTab, config, 132, "Unload OR4CLE", function()
     antiAfk.toggle(false)
     hop.toggle(false)
     autoTp.toggle(false)
+    autoFarm.stop()
 end)
 
+-- ============================================
 -- BUBBLE
+-- ============================================
 local bubble = makeBubble(gui, config, function()
     if not window.Visible then
         window.Visible = true
@@ -220,4 +279,4 @@ game:GetService("RunService").Heartbeat:Connect(function()
     if espEnabled then esp.scan(espFolder) end
 end)
 
-print("[OR4CLE] v3 loaded")
+print("[OR4CLE] v4 loaded")
