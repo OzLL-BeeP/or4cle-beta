@@ -3,22 +3,62 @@ local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/o
 return function(parent, config, onClick)
     local size = config.BubbleSize or 44
 
-    -- container (hitbox)
     local bubble = U.new("TextButton", {
         Name = "Bubble",
         Size = UDim2.fromOffset(size, size),
         Position = UDim2.fromOffset(config.BubbleX, config.BubbleY),
-        BackgroundColor3 = Color3.fromRGB(10, 10, 20),
-        BackgroundTransparency = 0,
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Text = "",
         AutoButtonColor = false,
-        ClipsDescendants = true,
+        ClipsDescendants = false,
         Parent = parent,
     })
-    U.corner(bubble, size / 2)   -- radius = setengah ukuran = bulat sempurna
 
-    -- glow
+    -- LOGO kotak + sudut bulat dikit
+    local logoFrame = U.new("Frame", {
+        Name = "LogoFrame",
+        Size = UDim2.fromScale(1, 1),
+        Position = UDim2.fromScale(0.5, 0.5),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundColor3 = Color3.fromRGB(10, 10, 20),
+        BorderSizePixel = 0,
+        ClipsDescendants = true,
+        Parent = bubble,
+    })
+    U.corner(logoFrame, 8)
+
+    U.new("ImageLabel", {
+        Size = UDim2.fromScale(1.1, 1.1),
+        Position = UDim2.fromScale(0.5, 0.5),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Image = config.LogoId,
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        ScaleType = Enum.ScaleType.Fit,
+        Parent = logoFrame,
+    })
+
+    -- RING UNGU di atas logo
+    local ring = U.new("Frame", {
+        Name = "Ring",
+        Size = UDim2.fromScale(1, 1),
+        Position = UDim2.fromScale(0.5, 0.5),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 5,
+        Parent = bubble,
+    })
+    U.corner(ring, size / 2)
+
+    local ringStroke = U.stroke(ring, Color3.fromRGB(124, 58, 237), 2.5)
+    U.gradient(ringStroke,
+        Color3.fromRGB(37, 99, 235),
+        Color3.fromRGB(124, 58, 237),
+        45)
+
+    -- glow belakang
     local glow = U.new("Frame", {
         Name = "Glow",
         Size = UDim2.fromOffset(size + 12, size + 12),
@@ -32,44 +72,71 @@ return function(parent, config, onClick)
     })
     U.corner(glow, (size + 12) / 2)
 
-    -- logo di dalam bubble (di-clip bulat)
-    U.new("ImageLabel", {
-        Size = UDim2.fromScale(1, 1),
-        Position = UDim2.fromScale(0.5, 0.5),
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        BackgroundTransparency = 1,
-        Image = config.LogoId,
-        ImageColor3 = Color3.fromRGB(255, 255, 255),
-        ImageTransparency = 0,
-        ScaleType = Enum.ScaleType.Crop,
-        ZIndex = 1,
-        Parent = bubble,
-    })
+    -- state
+    local dragging = false
+    local dragStart, startPos
+    local hovered = false
+    local pulseT = 0
 
-    -- border ungu (stroke di bubble)
-    local stroke = U.stroke(bubble, Color3.fromRGB(124, 58, 237), 2)
-    U.gradient(stroke,
-        Color3.fromRGB(37, 99, 235),
-        Color3.fromRGB(124, 58, 237),
-        45)
-
-    -- pulse glow
+    -- pulse loop
     task.spawn(function()
-        local t = 0
         while bubble.Parent do
-            t = t + 0.03
-            glow.BackgroundTransparency = 0.78 + math.sin(t * 2) * 0.08
+            pulseT = pulseT + 0.03
+            glow.BackgroundTransparency = 0.78 + math.sin(pulseT * 2) * 0.08
             task.wait(0.03)
         end
     end)
 
+    -- hover: scale cuma kalau GAK dragging
     bubble.MouseEnter:Connect(function()
-        U.tween(bubble, { Size = UDim2.fromOffset(size + 4, size + 4) }, 0.2, "spring")
+        hovered = true
+        if not dragging then
+            U.tween(bubble, { Size = UDim2.fromOffset(size + 4, size + 4) }, 0.15, "inout")
+        end
     end)
     bubble.MouseLeave:Connect(function()
-        U.tween(bubble, { Size = UDim2.fromOffset(size, size) }, 0.2, "inout")
+        hovered = false
+        if not dragging then
+            U.tween(bubble, { Size = UDim2.fromOffset(size, size) }, 0.15, "inout")
+        end
     end)
 
-    if onClick then bubble.MouseButton1Click:Connect(onClick) end
+    -- drag
+    bubble.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = bubble.Position
+            -- balikin ke ukuran normal pas drag
+            U.tween(bubble, { Size = UDim2.fromOffset(size, size) }, 0.1, "inout")
+        end
+    end)
+    bubble.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+            -- balik ke hover state
+            if hovered then
+                U.tween(bubble, { Size = UDim2.fromOffset(size + 4, size + 4) }, 0.15, "inout")
+            end
+        end
+    end)
+    game:GetService("UserInputService").InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch) then
+            local d = input.Position - dragStart
+            bubble.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + d.X,
+                startPos.Y.Scale, startPos.Y.Offset + d.Y
+            )
+        end
+    end)
+
+    if onClick then
+        bubble.MouseButton1Click:Connect(function()
+            if not dragging then onClick() end
+        end)
+    end
     return bubble
 end
