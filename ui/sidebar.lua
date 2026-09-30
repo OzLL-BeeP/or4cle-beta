@@ -1,4 +1,4 @@
-local U = require(script.Parent.Parent.util)
+local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/util.lua"))()
 
 return function(parent, config)
     local sidebar = U.new("Frame", {
