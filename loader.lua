@@ -189,6 +189,8 @@ local bubble = makeBubble(gui, config, function()
     end
 end)
 
+-- drag window
+local wDrag, wStart, wPos
 topBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
