@@ -7,15 +7,18 @@ return function(parent, config, onClick)
         Name = "Bubble",
         Size = UDim2.fromOffset(size, size),
         Position = UDim2.fromOffset(config.BubbleX, config.BubbleY),
-        BackgroundTransparency = 1,
+        BackgroundColor3 = Color3.fromRGB(10, 10, 20),
+        BackgroundTransparency = 0.99,   -- hampir transparan, tapi tetep deteksi klik
         BorderSizePixel = 0,
         Text = "",
         AutoButtonColor = false,
+        Active = true,                    -- penting: biar bisa diklik
         ClipsDescendants = false,
+        ZIndex = 10,
         Parent = parent,
     })
 
-    -- LOGO kotak + sudut bulat dikit
+    -- LOGO kotak
     local logoFrame = U.new("Frame", {
         Name = "LogoFrame",
         Size = UDim2.fromScale(1, 1),
@@ -24,6 +27,7 @@ return function(parent, config, onClick)
         BackgroundColor3 = Color3.fromRGB(10, 10, 20),
         BorderSizePixel = 0,
         ClipsDescendants = true,
+        ZIndex = 1,
         Parent = bubble,
     })
     U.corner(logoFrame, 8)
@@ -36,13 +40,14 @@ return function(parent, config, onClick)
         Image = config.LogoId,
         ImageColor3 = Color3.fromRGB(255, 255, 255),
         ScaleType = Enum.ScaleType.Fit,
+        ZIndex = 1,
         Parent = logoFrame,
     })
 
-    -- RING UNGU di atas logo
+    -- RING UNGU di atas logo (lebih kecil dari bubble)
     local ring = U.new("Frame", {
         Name = "Ring",
-        Size = UDim2.fromScale(1, 1),
+        Size = UDim2.fromScale(0.96, 0.96),   -- lebih kecil, biar stroke gak nembus
         Position = UDim2.fromScale(0.5, 0.5),
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
@@ -78,7 +83,6 @@ return function(parent, config, onClick)
     local hovered = false
     local pulseT = 0
 
-    -- pulse loop
     task.spawn(function()
         while bubble.Parent do
             pulseT = pulseT + 0.03
@@ -87,7 +91,7 @@ return function(parent, config, onClick)
         end
     end)
 
-    -- hover: scale cuma kalau GAK dragging
+    -- hover
     bubble.MouseEnter:Connect(function()
         hovered = true
         if not dragging then
@@ -101,14 +105,15 @@ return function(parent, config, onClick)
         end
     end)
 
-    -- drag
+    -- drag + click detection
+    local dragged = false
     bubble.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
+            dragged = false
             dragStart = input.Position
             startPos = bubble.Position
-            -- balikin ke ukuran normal pas drag
             U.tween(bubble, { Size = UDim2.fromOffset(size, size) }, 0.1, "inout")
         end
     end)
@@ -116,7 +121,6 @@ return function(parent, config, onClick)
         if input.UserInputType == Enum.UserInputType.MouseButton1
         or input.UserInputType == Enum.UserInputType.Touch then
             dragging = false
-            -- balik ke hover state
             if hovered then
                 U.tween(bubble, { Size = UDim2.fromOffset(size + 4, size + 4) }, 0.15, "inout")
             end
@@ -126,6 +130,9 @@ return function(parent, config, onClick)
         if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement
         or input.UserInputType == Enum.UserInputType.Touch) then
             local d = input.Position - dragStart
+            if math.abs(d.X) > 3 or math.abs(d.Y) > 3 then
+                dragged = true
+            end
             bubble.Position = UDim2.new(
                 startPos.X.Scale, startPos.X.Offset + d.X,
                 startPos.Y.Scale, startPos.Y.Offset + d.Y
@@ -133,10 +140,10 @@ return function(parent, config, onClick)
         end
     end)
 
-    if onClick then
-        bubble.MouseButton1Click:Connect(function()
-            if not dragging then onClick() end
-        end)
-    end
+    -- klik cuma jalan kalau GAK drag
+    bubble.MouseButton1Click:Connect(function()
+        if not dragged and onClick then onClick() end
+    end)
+
     return bubble
 end
