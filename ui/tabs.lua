@@ -2,7 +2,7 @@ local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/o
 
 return function(sidebar, config, tabNames, onSwitch)
     local buttons = {}
-    local refs = {}  -- { [button] = { text = label, underline = frame } }
+    local refs = {}
     local active
 
     local function show(name)
@@ -11,20 +11,16 @@ return function(sidebar, config, tabNames, onSwitch)
             local r = refs[b]
             if r and r.text then
                 if n == name then
-                    U.tween(r.text, { TextColor3 = U.rgb3(config.AccentA) }, 0.15, "inout")
+                    r.text.TextColor3 = Color3.fromRGB(139, 92, 246)
                     if r.underline then
-                        U.tween(r.underline, {
-                            BackgroundTransparency = 0,
-                            Size = UDim2.new(1, -16, 0, 2),
-                        }, 0.15, "inout")
+                        r.underline.BackgroundTransparency = 0
+                        r.underline.Size = UDim2.new(1, -16, 0, 2)
                     end
                 else
-                    U.tween(r.text, { TextColor3 = U.rgb3(config.TextDim) }, 0.15, "inout")
+                    r.text.TextColor3 = Color3.fromRGB(158, 158, 184)
                     if r.underline then
-                        U.tween(r.underline, {
-                            BackgroundTransparency = 1,
-                            Size = UDim2.new(0, 0, 0, 2),
-                        }, 0.15, "inout")
+                        r.underline.BackgroundTransparency = 1
+                        r.underline.Size = UDim2.new(0, 0, 0, 2)
                     end
                 end
             end
@@ -33,48 +29,58 @@ return function(sidebar, config, tabNames, onSwitch)
     end
 
     for i, tabName in ipairs(tabNames) do
-        local btn = U.new("TextButton", {
-            Size = UDim2.new(1, -20, 0, 36),
-            Position = UDim2.fromOffset(10, 14 + (i-1) * 44),
-            BackgroundColor3 = U.rgb3(config.BgPanel),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            Text = "",
-            AutoButtonColor = false,
-            Parent = sidebar,
-        })
-        U.corner(btn, 6)
+        local btn = Instance.new("TextButton")
+        btn.Name = "Tab_" .. tabName
+        btn.Size = UDim2.new(1, -20, 0, 36)
+        btn.Position = UDim2.fromOffset(10, 14 + (i-1) * 44)
+        btn.BackgroundColor3 = Color3.fromRGB(20, 20, 32)
+        btn.BackgroundTransparency = 1
+        btn.BorderSizePixel = 0
+        btn.Text = ""
+        btn.AutoButtonColor = false
+        btn.Parent = sidebar
 
-        local textLabel = U.label(btn, {
-            Size = UDim2.new(1, -16, 1, 0),
-            Position = UDim2.fromOffset(8, 0),
-            Text = string.upper(tabName),
-            TextColor3 = U.rgb3(config.TextDim),
-            Font = Enum.Font.GothamBold,
-            TextSize = 11,
-        })
+        local c = Instance.new("UICorner")
+        c.CornerRadius = UDim.new(0, 6)
+        c.Parent = btn
 
-        local underline = U.new("Frame", {
-            Size = UDim2.new(0, 0, 0, 2),
-            Position = UDim2.new(0, 8, 1, -6),
-            BackgroundColor3 = U.rgb3(config.AccentA),
-            BackgroundTransparency = 1,
-            BorderSizePixel = 0,
-            Parent = btn,
-        })
-        U.corner(underline, 1)
+        -- TEXT LABEL MANUAL
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Name = "TabLabel"
+        textLabel.Size = UDim2.new(1, -16, 1, 0)
+        textLabel.Position = UDim2.fromOffset(8, 0)
+        textLabel.BackgroundTransparency = 1
+        textLabel.Text = string.upper(tabName)
+        textLabel.TextColor3 = Color3.fromRGB(158, 158, 184)
+        textLabel.Font = Enum.Font.GothamBold
+        textLabel.TextSize = 11
+        textLabel.TextXAlignment = Enum.TextXAlignment.Left
+        textLabel.Parent = btn
 
-        -- simpen referensi di table, BUKAN di instance
+        -- underline
+        local underline = Instance.new("Frame")
+        underline.Name = "Underline"
+        underline.Size = UDim2.new(0, 0, 0, 2)
+        underline.Position = UDim2.new(0, 8, 1, -6)
+        underline.BackgroundColor3 = Color3.fromRGB(139, 92, 246)
+        underline.BackgroundTransparency = 1
+        underline.BorderSizePixel = 0
+        underline.Parent = btn
+
+        local uc = Instance.new("UICorner")
+        uc.CornerRadius = UDim.new(0, 1)
+        uc.Parent = underline
+
         refs[btn] = { text = textLabel, underline = underline }
 
         btn.MouseEnter:Connect(function()
             if active ~= tabName then
-                U.tween(textLabel, { TextColor3 = U.rgb3(config.Text) }, 0.12, "inout")
+                textLabel.TextColor3 = Color3.fromRGB(242, 242, 248)
             end
         end)
         btn.MouseLeave:Connect(function()
             if active ~= tabName then
-                U.tween(textLabel, { TextColor3 = U.rgb3(config.TextDim) }, 0.12, "inout")
+                textLabel.TextColor3 = Color3.fromRGB(158, 158, 184)
             end
         end)
         btn.MouseButton1Click:Connect(function() show(tabName) end)
@@ -85,11 +91,9 @@ return function(sidebar, config, tabNames, onSwitch)
     task.defer(function()
         local first = buttons[tabNames[1]]
         if first and refs[first] then
-            refs[first].text.TextColor3 = U.rgb3(config.AccentA)
-            if refs[first].underline then
-                refs[first].underline.BackgroundTransparency = 0
-                refs[first].underline.Size = UDim2.new(1, -16, 0, 2)
-            end
+            refs[first].text.TextColor3 = Color3.fromRGB(139, 92, 246)
+            refs[first].underline.BackgroundTransparency = 0
+            refs[first].underline.Size = UDim2.new(1, -16, 0, 2)
         end
     end)
 
