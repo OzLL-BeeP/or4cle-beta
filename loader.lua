@@ -100,7 +100,7 @@ end)
 -- ============================================
 local fTab = getTab("Farm")
 
--- RARITY FILTER
+-- RARITY FILTER (di Farm, bukan Visuals)
 makeSection(fTab, config, 0, "RARITY FILTER")
 
 local TIER_COLORS = {
@@ -114,12 +114,15 @@ local TIER_COLORS = {
 }
 local tierOptions = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
 
+local currentMinTier = "Common"
+
 makeOptionPicker(fTab, config, 40, {
     label = "Min Tier: ",
     options = tierOptions,
     colors = TIER_COLORS,
     default = "Common",
 }, function(tier)
+    currentMinTier = tier
     esp.setMinTier(tier)
     autoFarm.setMinTier(tier)
 end)
@@ -130,15 +133,7 @@ makeButton(fTab, config, 132, "TP to Nearest Egg", function()
     teleport.tpNearest()
 end)
 makeButton(fTab, config, 172, "TP to Highest Tier Egg", function()
-    local best = autoFarm.findBestEggPublic()
-    if best then
-        local base = best:FindFirstChild("EggBase") or best:FindFirstChildWhichIsA("BasePart")
-        if base then
-            local char = Players.LocalPlayer.Character
-            local h = char and char:FindFirstChild("HumanoidRootPart")
-            if h then h.CFrame = base.CFrame + Vector3.new(0, 3, 0) end
-        end
-    end
+    teleport.tpHighestFiltered(currentMinTier)
 end)
 
 -- AUTO FARM
@@ -248,7 +243,6 @@ local bubble = makeBubble(gui, config, function()
     end
 end)
 
--- drag window
 local wDrag, wStart, wPos
 topBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1

@@ -1,22 +1,17 @@
 local M = {}
 local LP = game:GetService("Players").LocalPlayer
 
--- deps
-local magma -- diinject dari loader
-local esp    -- diinject dari loader
-
 M.enabled = false
-M.mode = "Teleport"   -- "Teleport" | "Idle"
+M.mode = "Teleport"       -- "Teleport" | "Idle"
 M.minTier = "Common"
 M.returnToRanch = true
 M.loopDelay = 1.5
 M.magmaAuto = false
+M.tpRange = 5
 
-M.stats = {
-    farmed = 0,
-    mutations = 0,
-    startedAt = 0,
-}
+M.stats = { farmed = 0, mutations = 0, startedAt = 0 }
+
+local magma, esp  -- inject
 
 local TIER_ORDER = { Common=1, Rare=2, Epic=3, Legend=4, Mythic=5, Divine=6, Ethereal=7 }
 
@@ -46,8 +41,7 @@ local function getRanch()
             end
         end
     end
-    local char = LP.Character
-    local h = char and char:FindFirstChild("HumanoidRootPart")
+    local h = hrp()
     return h and h.CFrame or CFrame.new(0, 40313, 900)
 end
 
@@ -66,9 +60,7 @@ local function tierOf(name)
 end
 
 local function passFilter(tier)
-    local a = TIER_ORDER[M.minTier] or 0
-    local b = TIER_ORDER[tier] or 0
-    return b >= a
+    return (TIER_ORDER[tier] or 0) >= (TIER_ORDER[M.minTier] or 0)
 end
 
 local function findPickupPrompt(egg)
@@ -91,7 +83,7 @@ local function firePrompt(p)
     return true
 end
 
--- cari egg dengan tier tertinggi, lalu paling deket
+-- cari egg dengan tier tertinggi, lalu terdekat
 local function findBestEgg()
     local re = workspace:FindFirstChild("RenderedEggs")
     if not re then return nil end
@@ -113,24 +105,22 @@ local function findBestEgg()
     return best
 end
 
--- idle move pakai MoveTo
+-- idle movement
 local function idleMoveTo(pos, timeout)
     local hum = getHumanoid()
     if not hum then return false end
     hum:MoveTo(pos)
     local t = tick()
-    while tick() - t < (timeout or 8) do
+    while tick() - t < (timeout or 10) do
         local h = hrp()
         if not h then break end
         if (h.Position - pos).Magnitude < 4 then
+            hum:MoveTo(h.Position)
             return true
-        end
-        if hum.MoveToFinished then
-            -- udah sampe atau nyangkut
         end
         task.wait(0.1)
     end
-    hum:MoveTo(hum.RootPart and hum.RootPart.Position or pos) -- stop
+    hum:MoveTo(hum.RootPart and hum.RootPart.Position or pos)
     return false
 end
 
@@ -142,9 +132,8 @@ local function pickEgg(egg)
         tp(base.CFrame + Vector3.new(0, 3, 0))
         task.wait(0.25)
     else
-        -- idle: move ke posisi egg
-        idleMoveTo(base.Position, 10)
-        task.wait(0.2)
+        idleMoveTo(base.Position, 12)
+        task.wait(0.25)
     end
 
     local prompt = findPickupPrompt(egg)
@@ -154,9 +143,25 @@ local function pickEgg(egg)
     return true
 end
 
--- ===== LOOP =====
-local thread
+-- deteksi apakah karakter udah bawa egg
+local function hasEgg()
+    local char = LP.Character
+    if not char then return false end
+    for _, obj in ipairs(char:GetDescendants()) do
+        if obj.Name:lower():find("egg") then return true end
+    end
+    -- cek backpack
+    local bp = LP:FindFirstChild("Backpack")
+    if bp then
+        for _, obj in ipairs(bp:GetChildren()) do
+            if obj.Name:lower():find("egg") then return true end
+        end
+    end
+    return false
+end
 
+-- ============ LOOP ============
+local thread
 local function loop()
     M.stats.startedAt = tick()
     while M.enabled do
@@ -166,21 +171,21 @@ local function loop()
             if ok then
                 M.stats.farmed = M.stats.farmed + 1
 
-                -- magma auto
+                -- magma auto (drop ke lava)
                 if M.magmaAuto and magma and magma.dropEgg then
-                    local okDrop = magma.dropEgg()
-                    if okDrop then
-                        M.stats.mutations = M.stats.mutations + 1
-                    end
+                    local okDrop, _ = magma.dropEgg()
+                    if okDrop then M.stats.mutations = M.stats.mutations + 1 end
+                    task.wait(0.5)
                 end
 
                 -- balik ke ranch
                 if M.returnToRanch then
+                    local ranch = getRanch()
                     if M.mode == "Teleport" then
-                        tp(getRanch())
+                        tp(ranch)
                         task.wait(0.4)
                     else
-                        idleMoveTo(getRanch().Position, 12)
+                        idleMoveTo(ranch.Position, 14)
                         task.wait(0.3)
                     end
                 end
@@ -200,37 +205,25 @@ function M.stop()
     M.enabled = false
     thread = nil
     local hum = getHumanoid()
-    if hum then hum:MoveTo(hum.RootPart and hum.RootPart.Position or Vector3.new()) end
+    if hum and hum.RootPart then hum:MoveTo(hum.RootPart.Position) end
 end
 
 function M.toggle(on)
     if on then M.start() else M.stop() end
 end
 
-function M.setMode(m)
-    M.mode = m
-end
-
-function M.setMinTier(t)
-    M.minTier = t
-end
-
-function M.setReturn(on)
-    M.returnToRanch = on
-end
-
-function M.setDelay(d)
-    M.loopDelay = d
-end
-
-function M.setMagma(on)
-    M.magmaAuto = on
-    if magma then magma.toggle(on) end
-end
+function M.setMode(m) M.mode = m end
+function M.setMinTier(t) M.minTier = t end
+function M.setReturn(on) M.returnToRanch = on end
+function M.setDelay(d) M.loopDelay = d end
+function M.setMagma(on) M.magmaAuto = on end
 
 function M.inject(deps)
     magma = deps.magma
     esp = deps.esp
 end
+
+function M.findBestEggPublic() return findBestEgg() end
+function M.hasEgg() return hasEgg() end
 
 return M

@@ -42,42 +42,20 @@ local function firePrompt(p)
     return true
 end
 
--- ===== MAGMA CYCLE (dipanggil dari auto_farm atau manual) =====
--- return: true kalau sukses drop, false kalau prompt gak ketemu
 function M.dropEgg()
     tp(M.CraterCF)
     task.wait(1.2)
     local p = findDropPrompt()
-    if not p then
-        return false, "Drop prompt gak ketemu di crater"
-    end
+    if not p then return false, "Drop prompt gak ketemu" end
     firePrompt(p)
-    -- tunggu roll server-side
     task.wait(3.5)
-    return true, "Egg di-drop ke lava"
+    return true, "Dropped"
 end
 
--- ===== MANUAL ATTEMPT =====
 function M.attempt()
-    -- cek dulu bawa egg apa gak
-    local char = LP.Character
-    if not char then return false, "No character" end
-
-    local hasEgg = false
-    for _, obj in ipairs(char:GetDescendants()) do
-        if obj.Name:lower():find("egg") then hasEgg = true; break end
-    end
-
-    if not hasEgg then
-        return false, "Gak bawa egg"
-    end
-
     return M.dropEgg()
 end
 
--- ===== AUTO TOGGLE =====
-function M.toggle(on)
-    M.autoEnabled = on
-end
+function M.toggle(on) M.autoEnabled = on end
 
 return M
