@@ -3,11 +3,23 @@ local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/o
 return function(parent, config)
     local content = U.new("Frame", {
         Name = "Content",
-        Size = UDim2.new(1, -120, 1, -44),
-        Position = UDim2.fromOffset(120, 44),
-        BackgroundColor3 = Color3.fromRGB(unpack(config.BgDark)),
+        Size = UDim2.new(1, -140, 1, -52),
+        Position = UDim2.fromOffset(140, 52),
+        BackgroundColor3 = U.rgb3(config.BgWindow),
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Parent = parent,
     })
-    return content
+    local scroll = U.new("ScrollingFrame", {
+        Name = "Scroll",
+        Size = UDim2.fromScale(1, 1),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 4,
+        ScrollBarImageColor3 = U.rgb3(config.AccentA),
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        Parent = content,
+    })
+    U.pad(scroll, 14, 14, 14, 14)
+    return content, scroll
 end

@@ -2,47 +2,73 @@ local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/o
 
 return function(parent, config, y, label, default, callback)
     local row = U.new("Frame", {
-        Size = UDim2.new(1, -20, 0, 30),
-        Position = UDim2.fromOffset(10, y),
-        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 0, 34),
+        Position = UDim2.fromOffset(0, y),
+        BackgroundColor3 = U.rgb3(config.BgCard),
+        BackgroundTransparency = 0.3,
+        BorderSizePixel = 0,
         Parent = parent,
     })
-    U.new("TextLabel", {
-        Size = UDim2.new(0.7, 0, 1, 0),
-        BackgroundTransparency = 1,
+    U.corner(row, config.RadiusButton)
+
+    U.label(row, {
+        Size = UDim2.new(1, -100, 1, 0),
+        Position = UDim2.fromOffset(14, 0),
         Text = label,
-        TextColor3 = Color3.fromRGB(unpack(config.Text)),
-        Font = Enum.Font.Gotham,
-        TextSize = 13,
-        TextXAlignment = Enum.TextXAlignment.Left,
-        Parent = row,
+        TextSize = config.FontLabel,
     })
+
     local state = default or false
-    local btn = U.new("TextButton", {
-        Size = UDim2.fromOffset(40, 20),
-        Position = UDim2.new(1, -40, 0.5, -10),
-        BackgroundColor3 = state and Color3.fromRGB(unpack(config.AccentA))
-                                 or Color3.fromRGB(unpack(config.BgElem)),
+    local statusLbl = U.label(row, {
+        Size = UDim2.fromOffset(50, 1),
+        Position = UDim2.new(1, -100, 0, 0),
+        Text = state and "ON" or "OFF",
+        TextColor3 = state and U.rgb3(config.AccentA) or U.rgb3(config.TextMuted),
+        Font = Enum.Font.GothamBold,
+        TextSize = 10,
+        TextXAlignment = Enum.TextXAlignment.Right,
+    })
+
+    local track = U.new("Frame", {
+        Size = UDim2.fromOffset(38, 20),
+        Position = UDim2.new(1, -52, 0.5, -10),
+        BackgroundColor3 = state and U.rgb3(config.AccentA) or U.rgb3(config.BgElem),
         BorderSizePixel = 0,
-        Text = "",
-        AutoButtonColor = false,
         Parent = row,
     })
-    U.corner(btn, 10)
+    U.corner(track, 10)
+
     local knob = U.new("Frame", {
-        Size = UDim2.fromOffset(16, 16),
-        Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.fromOffset(2, 2),
+        Size = UDim2.fromOffset(14, 14),
+        Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.fromOffset(3, 3),
         BackgroundColor3 = Color3.new(1, 1, 1),
         BorderSizePixel = 0,
-        Parent = btn,
+        Parent = track,
     })
-    U.corner(knob, 8)
-    btn.MouseButton1Click:Connect(function()
-        state = not state
-        btn.BackgroundColor3 = state and Color3.fromRGB(unpack(config.AccentA))
-                                    or Color3.fromRGB(unpack(config.BgElem))
-        knob.Position = state and UDim2.new(1, -18, 0.5, -8) or UDim2.fromOffset(2, 2)
-        if callback then callback(state) end
+    U.corner(knob, 7)
+
+    row.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            state = not state
+            U.tween(track, {
+                BackgroundColor3 = state and U.rgb3(config.AccentA) or U.rgb3(config.BgElem),
+            }, 0.18, "inout")
+            U.tween(knob, {
+                Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.fromOffset(3, 3),
+            }, 0.22, "spring")
+            U.tween(statusLbl, {
+                TextColor3 = state and U.rgb3(config.AccentA) or U.rgb3(config.TextMuted),
+            }, 0.15, "inout")
+            statusLbl.Text = state and "ON" or "OFF"
+            if callback then callback(state) end
+        end
+    end)
+    row.MouseEnter:Connect(function()
+        U.tween(row, { BackgroundTransparency = 0 }, 0.12, "inout")
+    end)
+    row.MouseLeave:Connect(function()
+        U.tween(row, { BackgroundTransparency = 0.3 }, 0.12, "inout")
     end)
     return row
 end

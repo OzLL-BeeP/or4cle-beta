@@ -3,37 +3,109 @@ local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/o
 return function(sidebar, config, tabNames, onSwitch)
     local buttons = {}
     local active
+
     local function show(name)
         active = name
         for n, b in pairs(buttons) do
             if n == name then
-                b.BackgroundColor3 = Color3.fromRGB(unpack(config.AccentA))
-                b.TextColor3 = Color3.fromRGB(unpack(config.Text))
+                U.tween(b, { TextColor3 = U.rgb3(config.AccentA) }, 0.15, "inout")
+                if b.Underline then
+                    U.tween(b.Underline, {
+                        BackgroundTransparency = 0,
+                        Size = UDim2.new(1, -16, 0, 2),
+                    }, 0.15, "inout")
+                end
             else
-                b.BackgroundColor3 = Color3.fromRGB(unpack(config.BgPanel))
-                b.TextColor3 = Color3.fromRGB(unpack(config.TextDim))
+                U.tween(b, { TextColor3 = U.rgb3(config.TextDim) }, 0.15, "inout")
+                if b.Underline then
+                    U.tween(b.Underline, {
+                        BackgroundTransparency = 1,
+                        Size = UDim2.new(0, 0, 0, 2),
+                    }, 0.15, "inout")
+                end
             end
         end
         if onSwitch then onSwitch(name) end
     end
+
     for i, tabName in ipairs(tabNames) do
         local btn = U.new("TextButton", {
-            Size = UDim2.new(1, -16, 0, 32),
-            Position = UDim2.fromOffset(8, 8 + (i-1) * 38),
-            BackgroundColor3 = Color3.fromRGB(unpack(config.BgPanel)),
+            Size = UDim2.new(1, -20, 0, 36),
+            Position = UDim2.fromOffset(10, 14 + (i-1) * 44),
+            BackgroundColor3 = U.rgb3(config.BgPanel),
+            BackgroundTransparency = 1,
             BorderSizePixel = 0,
-            Text = tabName,
-            TextColor3 = Color3.fromRGB(unpack(config.TextDim)),
-            Font = Enum.Font.GothamMedium,
-            TextSize = 13,
-            TextXAlignment = Enum.TextXAlignment.Left,
+            Text = "",
             AutoButtonColor = false,
             Parent = sidebar,
         })
         U.corner(btn, 6)
+
+        local text = U.label(btn, {
+            Size = UDim2.new(1, -16, 1, 0),
+            Position = UDim2.fromOffset(8, 0),
+            Text = string.upper(tabName),
+            TextColor3 = U.rgb3(config.TextDim),
+            Font = Enum.Font.GothamBold,
+            TextSize = 11,
+        })
+        btn.TextLabel = text
+
+        local underline = U.new("Frame", {
+            Size = UDim2.new(0, 0, 0, 2),
+            Position = UDim2.new(0, 8, 1, -6),
+            BackgroundColor3 = U.rgb3(config.AccentA),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            Parent = btn,
+        })
+        U.corner(underline, 1)
+        btn.Underline = underline
+
+        btn.MouseEnter:Connect(function()
+            if active ~= tabName then
+                U.tween(text, { TextColor3 = U.rgb3(config.Text) }, 0.12, "inout")
+            end
+        end)
+        btn.MouseLeave:Connect(function()
+            if active ~= tabName then
+                U.tween(text, { TextColor3 = U.rgb3(config.TextDim) }, 0.12, "inout")
+            end
+        end)
         btn.MouseButton1Click:Connect(function() show(tabName) end)
+
+        -- simpan referensi text label buat di-tween
+        btn.TextColor3 = U.rgb3(config.TextDim)
         buttons[tabName] = btn
+        -- override show biar langsung ubah text label, bukan btn
+        btn.MouseButton1Click:Connect(function()
+            for n, b in pairs(buttons) do
+                if n == tabName then
+                    U.tween(b.TextLabel, { TextColor3 = U.rgb3(config.AccentA) }, 0.15, "inout")
+                    U.tween(b.Underline, {
+                        BackgroundTransparency = 0,
+                        Size = UDim2.new(1, -16, 0, 2),
+                    }, 0.15, "inout")
+                else
+                    U.tween(b.TextLabel, { TextColor3 = U.rgb3(config.TextDim) }, 0.15, "inout")
+                    U.tween(b.Underline, {
+                        BackgroundTransparency = 1,
+                        Size = UDim2.new(0, 0, 0, 2),
+                    }, 0.15, "inout")
+                end
+            end
+            if onSwitch then onSwitch(tabName) end
+        end)
     end
-    show(tabNames[1])
+
+    task.defer(function()
+        local first = buttons[tabNames[1]]
+        if first then
+            first.TextLabel.TextColor3 = U.rgb3(config.AccentA)
+            first.Underline.BackgroundTransparency = 0
+            first.Underline.Size = UDim2.new(1, -16, 0, 2)
+        end
+    end)
+
     return buttons, show
 end

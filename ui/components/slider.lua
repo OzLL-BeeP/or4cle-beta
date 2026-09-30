@@ -1,2 +1,2 @@
--- TODO: implement slider
+-- TODO
 return function() end
