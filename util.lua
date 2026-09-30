@@ -1,8 +1,9 @@
--- OR4CLE v3 Util — Full Text UI
+-- OR4CLE v3 Util
 local TweenService = game:GetService("TweenService")
 
 local U = {}
 
+-- ============ INSTANCE ============
 function U.new(class, props)
     local obj = Instance.new(class)
     for k, v in pairs(props or {}) do obj[k] = v end
@@ -53,6 +54,7 @@ function U.pad(parent, t, r, b, l)
     })
 end
 
+-- ============ COLOR ============
 function U.rgb(t, alpha)
     return Color3.fromRGB(t[1], t[2], t[3]), (t[4] or alpha or 0)
 end
@@ -61,7 +63,7 @@ function U.rgb3(t)
     return Color3.fromRGB(t[1], t[2], t[3])
 end
 
--- ===== ANIMASI =====
+-- ============ ANIMASI ============
 local EASING = {
     out    = Enum.EasingStyle.Quint,
     inout  = Enum.EasingStyle.Sine,
@@ -113,11 +115,11 @@ function U.ripple(btn, color)
     end)
 end
 
--- ===== TEXT HELPERS =====
+-- ============ TEXT HELPERS ============
 function U.title(parent, props)
     local d = {
         BackgroundTransparency = 1,
-        TextColor3 = U.rgb3({242, 242, 248}),
+        TextColor3 = Color3.fromRGB(242, 242, 248),
         Font = Enum.Font.GothamBold,
         TextSize = 15,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -130,7 +132,7 @@ end
 function U.subtitle(parent, props)
     local d = {
         BackgroundTransparency = 1,
-        TextColor3 = U.rgb3({158, 158, 184}),
+        TextColor3 = Color3.fromRGB(158, 158, 184),
         Font = Enum.Font.Gotham,
         TextSize = 9,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -143,7 +145,7 @@ end
 function U.label(parent, props)
     local d = {
         BackgroundTransparency = 1,
-        TextColor3 = U.rgb3({242, 242, 248}),
+        TextColor3 = Color3.fromRGB(242, 242, 248),
         Font = Enum.Font.GothamMedium,
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -156,7 +158,7 @@ end
 function U.sectionTitle(parent, props)
     local d = {
         BackgroundTransparency = 1,
-        TextColor3 = U.rgb3({158, 158, 184}),
+        TextColor3 = Color3.fromRGB(158, 158, 184),
         Font = Enum.Font.GothamBold,
         TextSize = 10,
         TextXAlignment = Enum.TextXAlignment.Left,
@@ -169,7 +171,7 @@ end
 function U.value(parent, props)
     local d = {
         BackgroundTransparency = 1,
-        TextColor3 = U.rgb3({96, 165, 250}),
+        TextColor3 = Color3.fromRGB(96, 165, 250),
         Font = Enum.Font.Code,
         TextSize = 12,
         TextXAlignment = Enum.TextXAlignment.Right,
@@ -181,9 +183,9 @@ end
 
 function U.tag(parent, props)
     local d = {
-        BackgroundColor3 = U.rgb3({35, 35, 54}),
+        BackgroundColor3 = Color3.fromRGB(35, 35, 54),
         BorderSizePixel = 0,
-        TextColor3 = U.rgb3({158, 158, 184}),
+        TextColor3 = Color3.fromRGB(158, 158, 184),
         Font = Enum.Font.GothamBold,
         TextSize = 9,
         TextXAlignment = Enum.TextXAlignment.Center,
@@ -196,13 +198,14 @@ end
 function U.divider(parent, color)
     return U.new("Frame", {
         Size = UDim2.new(1, 0, 0, 1),
-        BackgroundColor3 = color or U.rgb3({42, 42, 63}),
+        BackgroundColor3 = color or Color3.fromRGB(42, 42, 63),
         BackgroundTransparency = 0.3,
         BorderSizePixel = 0,
         Parent = parent,
     })
 end
 
+-- ============ FORMAT ============
 function U.fmt(n)
     if type(n) ~= "number" then return tostring(n) end
     if n >= 1e12 then return string.format("%.2fT", n/1e12) end
