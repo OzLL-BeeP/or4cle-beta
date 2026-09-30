@@ -60,7 +60,9 @@ local _, showTab = makeTabs(sidebar, config, tabs, function(name)
     end
 end)
 
+-- ==========================================
 -- VISUALS
+-- ==========================================
 local vTab = getTab("Visuals")
 makeSection(vTab, config, 0, "EGG ESP")
 makeToggle(vTab, config, 40, "Enable Egg ESP", false, function(v)
@@ -71,18 +73,22 @@ end)
 makeSection(vTab, config, 92, "MIN RARITY")
 local tierList = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
 local tierIdx = 1
-local tierBtn
+local tierBtn  -- declare dulu
 
 local function cycleTier()
     tierIdx = tierIdx + 1
     if tierIdx > #tierList then tierIdx = 1 end
     esp.setMinTier(tierList[tierIdx])
-    tierBtn.TextLabel.Text = "Min Tier: " .. tierList[tierIdx]
+    if tierBtn and tierBtn.TextLabel then
+        tierBtn.TextLabel.Text = "Min Tier: " .. tierList[tierIdx]
+    end
 end
 
 tierBtn = makeButton(vTab, config, 132, "Min Tier: Common", cycleTier)
 
+-- ==========================================
 -- FARM
+-- ==========================================
 local fTab = getTab("Farm")
 makeSection(fTab, config, 0, "TELEPORT")
 makeButton(fTab, config, 40, "TP to Nearest Egg", function()
@@ -104,7 +110,9 @@ makeButton(fTab, config, 268, "Attempt Magma Mutation", function()
     print("[OR4CLE]", ok, msg)
 end)
 
+-- ==========================================
 -- UTILITY
+-- ==========================================
 local uTab = getTab("Utility")
 makeSection(uTab, config, 0, "MOVEMENT")
 makeToggle(uTab, config, 40, "Speed Hack", false, function(v)
@@ -123,7 +131,9 @@ local hopBtn
 
 local function applyHop()
     hop.setInterval(hopModes[hopIdx])
-    hopBtn.TextLabel.Text = "Interval: " .. hopModes[hopIdx] .. " menit"
+    if hopBtn and hopBtn.TextLabel then
+        hopBtn.TextLabel.Text = "Interval: " .. hopModes[hopIdx] .. " menit"
+    end
 end
 
 makeToggle(uTab, config, 224, "Auto Server Hop", false, function(v)
@@ -142,7 +152,9 @@ makeButton(uTab, config, 312, "Hop Now", function()
     hop.hop()
 end)
 
+-- ==========================================
 -- SETTINGS
+-- ==========================================
 local sTab = getTab("Settings")
 makeSection(sTab, config, 0, "PERFORMANCE")
 makeToggle(sTab, config, 40, "FPS Boost", false, function(v)
@@ -159,7 +171,9 @@ makeButton(sTab, config, 132, "Unload OR4CLE", function()
     autoTp.toggle(false)
 end)
 
+-- ==========================================
 -- BUBBLE
+-- ==========================================
 local bubble = makeBubble(gui, config, function()
     if not window.Visible then
         window.Visible = true
@@ -172,7 +186,6 @@ local bubble = makeBubble(gui, config, function()
     end
 end)
 
--- drag bubble
 local dragging, dragStart, startPos
 bubble.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -199,7 +212,6 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
--- drag window
 local wDrag, wStart, wPos
 topBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
