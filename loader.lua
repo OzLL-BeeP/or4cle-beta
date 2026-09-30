@@ -79,12 +79,12 @@ local function cycleTier()
     tierIdx = tierIdx + 1
     if tierIdx > #tierList then tierIdx = 1 end
     esp.setMinTier(tierList[tierIdx])
-    if tierBtn and tierBtn.TabText then
-        tierBtn.TabText.Text = "Min Tier: " .. tierList[tierIdx]
+    if tierBtnText then
+        tierBtnText.Text = "Min Tier: " .. tierList[tierIdx]
     end
 end
 
-tierBtn = makeButton(vTab, config, 132, "Min Tier: Common", cycleTier)
+tierBtn, tierBtnText = makeButton(vTab, config, 132, "Min Tier: Common", cycleTier)
 
 -- ==========================================
 -- FARM
@@ -131,8 +131,8 @@ local hopBtn
 
 local function applyHop()
     hop.setInterval(hopModes[hopIdx])
-    if hopBtn and hopBtn.TabText then
-        hopBtn.TabText.Text = "Interval: " .. hopModes[hopIdx] .. " menit"
+    if hopBtnText then
+        hopBtnText.Text = "Interval: " .. hopModes[hopIdx] .. " menit"
     end
 end
 
@@ -141,7 +141,7 @@ makeToggle(uTab, config, 224, "Auto Server Hop", false, function(v)
     hop.toggle(v)
 end)
 
-hopBtn = makeButton(uTab, config, 268, "Interval: 10 menit", function()
+hopBtn, hopBtnText = makeButton(uTab, config, 268, "Interval: 10 menit", function()
     hopIdx = hopIdx + 1
     if hopIdx > #hopModes then hopIdx = 1 end
     applyHop()

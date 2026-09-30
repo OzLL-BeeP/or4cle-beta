@@ -2,24 +2,26 @@ local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/o
 
 return function(sidebar, config, tabNames, onSwitch)
     local buttons = {}
+    local refs = {}  -- { [button] = { text = label, underline = frame } }
     local active
 
     local function show(name)
         active = name
         for n, b in pairs(buttons) do
-            if b.TabText then
+            local r = refs[b]
+            if r and r.text then
                 if n == name then
-                    U.tween(b.TabText, { TextColor3 = U.rgb3(config.AccentA) }, 0.15, "inout")
-                    if b.Underline then
-                        U.tween(b.Underline, {
+                    U.tween(r.text, { TextColor3 = U.rgb3(config.AccentA) }, 0.15, "inout")
+                    if r.underline then
+                        U.tween(r.underline, {
                             BackgroundTransparency = 0,
                             Size = UDim2.new(1, -16, 0, 2),
                         }, 0.15, "inout")
                     end
                 else
-                    U.tween(b.TabText, { TextColor3 = U.rgb3(config.TextDim) }, 0.15, "inout")
-                    if b.Underline then
-                        U.tween(b.Underline, {
+                    U.tween(r.text, { TextColor3 = U.rgb3(config.TextDim) }, 0.15, "inout")
+                    if r.underline then
+                        U.tween(r.underline, {
                             BackgroundTransparency = 1,
                             Size = UDim2.new(0, 0, 0, 2),
                         }, 0.15, "inout")
@@ -51,7 +53,6 @@ return function(sidebar, config, tabNames, onSwitch)
             Font = Enum.Font.GothamBold,
             TextSize = 11,
         })
-        btn.TabText = textLabel
 
         local underline = U.new("Frame", {
             Size = UDim2.new(0, 0, 0, 2),
@@ -62,7 +63,9 @@ return function(sidebar, config, tabNames, onSwitch)
             Parent = btn,
         })
         U.corner(underline, 1)
-        btn.Underline = underline
+
+        -- simpen referensi di table, BUKAN di instance
+        refs[btn] = { text = textLabel, underline = underline }
 
         btn.MouseEnter:Connect(function()
             if active ~= tabName then
@@ -81,14 +84,14 @@ return function(sidebar, config, tabNames, onSwitch)
 
     task.defer(function()
         local first = buttons[tabNames[1]]
-        if first and first.TabText then
-            first.TabText.TextColor3 = U.rgb3(config.AccentA)
-            if first.Underline then
-                first.Underline.BackgroundTransparency = 0
-                first.Underline.Size = UDim2.new(1, -16, 0, 2)
+        if first and refs[first] then
+            refs[first].text.TextColor3 = U.rgb3(config.AccentA)
+            if refs[first].underline then
+                refs[first].underline.BackgroundTransparency = 0
+                refs[first].underline.Size = UDim2.new(1, -16, 0, 2)
             end
         end
     end)
 
-    return buttons, show
+    return buttons, show, refs
 end
