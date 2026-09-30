@@ -1,4 +1,4 @@
--- OR4CLE v3 Util
+-- OR4CLE v5 Util
 local TweenService = game:GetService("TweenService")
 
 local U = {}
@@ -220,6 +220,34 @@ function U.uptime(sec)
     local m = math.floor((sec % 3600) / 60)
     local s = math.floor(sec % 60)
     return string.format("%02d:%02d:%02d", h, m, s)
+end
+
+-- ============ RARITY (untuk dipakai di mana aja) ============
+U.TIER_ORDER = { Common=1, Rare=2, Epic=3, Legend=4, Mythic=5, Divine=6, Ethereal=7 }
+U.TIER_COLORS = {
+    Common   = Color3.fromRGB(180, 180, 180),
+    Rare     = Color3.fromRGB(80, 160, 255),
+    Epic     = Color3.fromRGB(180, 100, 255),
+    Legend   = Color3.fromRGB(255, 150, 50),
+    Mythic   = Color3.fromRGB(255, 80, 80),
+    Divine   = Color3.fromRGB(255, 215, 0),
+    Ethereal = Color3.fromRGB(255, 100, 255),
+    Unknown  = Color3.fromRGB(120, 120, 120),
+}
+U.TIER_LIST = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
+
+function U.tierOf(name)
+    local n = name:lower()
+    if n:find("volcanic") or n:find("cherub") or n:find("solaris") or n:find("blackhole") or n:find("black hole") then return "Ethereal" end
+    if n:find("bloom") or n:find("galaxy") or n:find("aurora") then return "Divine" end
+    if n:find("tidal") or n:find("soul") or n:find("sinister") or n:find("flaming")
+    or n:find("dominus") or n:find("asteroid") or n:find("skull") or n:find("crystal")
+    or n:find("diamond") then return "Mythic" end
+    if n:find("golden") or n:find("glass") then return "Legend" end
+    if n:find("ice") or n:find("slime") or n:find("flower") or n:find("mushroom") then return "Epic" end
+    if n:find("leaf") or n:find("stone") or n:find("easter") or n:find("cracked") then return "Rare" end
+    if n:find("brown") or n:find("white") then return "Common" end
+    return "Unknown"
 end
 
 return U
