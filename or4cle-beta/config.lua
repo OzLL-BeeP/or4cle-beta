@@ -1,0 +1,15 @@
+return {
+    AccentA = {59, 130, 246},
+    AccentB = {139, 92, 246},
+    BgDark  = {12, 12, 20},
+    BgPanel = {20, 20, 32},
+    BgElem  = {28, 28, 44},
+    Text    = {235, 235, 245},
+    TextDim = {140, 140, 165},
+    LogoId  = "rbxassetid://114651091062453",
+    BubbleSize = 56,
+    BubbleX = 80,
+    BubbleY = 200,
+    WinW = 500,
+    WinH = 360,
+}
