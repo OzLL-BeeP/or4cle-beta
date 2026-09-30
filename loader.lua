@@ -1,5 +1,5 @@
 -- OR4CLE entry point (GitHub-compatible)
-local BASE = "https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/or4cle-beta/"
+local BASE = "https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/"
 
 local function loadModule(path)
     local code = game:HttpGet(BASE .. path)
