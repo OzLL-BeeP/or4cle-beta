@@ -41,28 +41,39 @@ local content, scroll = makeContent(window, config)
 
 local espEnabled = false
 local tabContents = {}
+
 local function getTab(name)
     if tabContents[name] then return tabContents[name] end
     local holder = U.new("Frame", {
-        Size = UDim2.new(1, 0, 0, 2000),
+        Name = "Tab_" .. name,
+        Size = UDim2.new(1, 0, 0, 0),
+        AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         Visible = false,
+        ZIndex = 2,
         Parent = scroll,
     })
     tabContents[name] = holder
     return holder
 end
 
-local tabs = {"Visuals", "Farm", "Utility", "Settings"}
-local _, showTab = makeTabs(sidebar, config, tabs, function(name)
+local function refreshTabs(activeName)
     for n, f in pairs(tabContents) do
-        f.Visible = (n == name)
+        f.Visible = (n == activeName)
     end
+end
+
+local tabNames = {"Visuals", "Farm", "Utility", "Settings"}
+for _, n in ipairs(tabNames) do getTab(n) end
+
+local _, showTab = makeTabs(sidebar, config, tabNames, refreshTabs)
+
+task.defer(function()
+    task.wait(0.2)
+    refreshTabs("Visuals")
 end)
 
--- ==========================================
 -- VISUALS
--- ==========================================
 local vTab = getTab("Visuals")
 makeSection(vTab, config, 0, "EGG ESP")
 makeToggle(vTab, config, 40, "Enable Egg ESP", false, function(v)
@@ -73,7 +84,7 @@ end)
 makeSection(vTab, config, 92, "MIN RARITY")
 local tierList = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
 local tierIdx = 1
-local tierBtn  -- declare dulu
+local tierBtn, tierBtnText
 
 local function cycleTier()
     tierIdx = tierIdx + 1
@@ -86,9 +97,7 @@ end
 
 tierBtn, tierBtnText = makeButton(vTab, config, 132, "Min Tier: Common", cycleTier)
 
--- ==========================================
 -- FARM
--- ==========================================
 local fTab = getTab("Farm")
 makeSection(fTab, config, 0, "TELEPORT")
 makeButton(fTab, config, 40, "TP to Nearest Egg", function()
@@ -110,9 +119,7 @@ makeButton(fTab, config, 268, "Attempt Magma Mutation", function()
     print("[OR4CLE]", ok, msg)
 end)
 
--- ==========================================
 -- UTILITY
--- ==========================================
 local uTab = getTab("Utility")
 makeSection(uTab, config, 0, "MOVEMENT")
 makeToggle(uTab, config, 40, "Speed Hack", false, function(v)
@@ -127,7 +134,7 @@ end)
 makeSection(uTab, config, 184, "SERVER HOP")
 local hopModes = {5, 10, 15, 20, 25, 30, 40, 50}
 local hopIdx = 2
-local hopBtn
+local hopBtn, hopBtnText
 
 local function applyHop()
     hop.setInterval(hopModes[hopIdx])
@@ -152,9 +159,7 @@ makeButton(uTab, config, 312, "Hop Now", function()
     hop.hop()
 end)
 
--- ==========================================
 -- SETTINGS
--- ==========================================
 local sTab = getTab("Settings")
 makeSection(sTab, config, 0, "PERFORMANCE")
 makeToggle(sTab, config, 40, "FPS Boost", false, function(v)
@@ -171,9 +176,7 @@ makeButton(sTab, config, 132, "Unload OR4CLE", function()
     autoTp.toggle(false)
 end)
 
--- ==========================================
 -- BUBBLE
--- ==========================================
 local bubble = makeBubble(gui, config, function()
     if not window.Visible then
         window.Visible = true

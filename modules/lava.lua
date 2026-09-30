@@ -2,13 +2,32 @@ local M = {}
 local LP = game:GetService("Players").LocalPlayer
 local RunService = game:GetService("RunService")
 
+local LP = game.Players.LocalPlayer
+
+local function getRanch()
+    local plots = workspace:FindFirstChild("Plots")
+    if plots then
+        for _, plot in ipairs(plots:GetChildren()) do
+            local owner = plot:FindFirstChild("Owner")
+            if owner and owner.Value == LP then
+                local ok, cf = pcall(function() return plot:GetPivot() end)
+                if ok then return cf end
+            end
+        end
+    end
+    local char = LP.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    return hrp and hrp.CFrame or CFrame.new(0, 40313, 900)
+end
+
+
 M.POINTS = {
     Entrance = CFrame.new(-4939.8, 41284.7, -3680.0),
     Validate = CFrame.new(-4966.7, 41282.8, -3656.4),
     EggSpawn = CFrame.new(-5329.4, 40910.2, -3580.9),
     Lair     = CFrame.new(-5336.6, 40925.1, -3557.0),
     Summit   = CFrame.new(-5102.8, 41405.6, -3489.1),
-    Ranch    = CFrame.new(0, 40313, 900),
+    -- Ranch auto-detected via getRanch()
 }
 
 local noclip, conn
@@ -72,7 +91,7 @@ function M.grab()
     task.wait(0.5)
     tp(M.POINTS.Entrance); task.wait(0.2)
     M.setNoclip(false)
-    tp(M.POINTS.Ranch)
+    tp(getRanch())
     return true, "Sukses"
 end
 

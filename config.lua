@@ -61,13 +61,13 @@ return {
     LogoId = "rbxassetid://114651091062453",
 
     -- Bubble
-    BubbleSize = 58,
+    BubbleSize = 38,
     BubbleX = 80,
     BubbleY = 200,
 
     -- Window
-    WinW = 600,
-    WinH = 440,
+    WinW = 400,
+    WinH = 300,
 
     -- Versi
     Version = "v3.0-beta",

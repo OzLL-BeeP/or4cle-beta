@@ -18,6 +18,8 @@ return function(parent, config)
         ScrollBarThickness = 4,
         ScrollBarImageColor3 = U.rgb3(config.AccentA),
         CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
         Parent = content,
     })
     U.pad(scroll, 14, 14, 14, 14)

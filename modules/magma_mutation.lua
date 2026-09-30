@@ -1,10 +1,27 @@
+local LP = game.Players.LocalPlayer
+local function getRanch()
+    local plots = workspace:FindFirstChild("Plots")
+    if plots then
+        for _, plot in ipairs(plots:GetChildren()) do
+            local owner = plot:FindFirstChild("Owner")
+            if owner and owner.Value == LP then
+                local ok, cf = pcall(function() return plot:GetPivot() end)
+                if ok then return cf end
+            end
+        end
+    end
+    local char = LP.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    return hrp and hrp.CFrame or CFrame.new(0, 40313, 900)
+end
+
 -- OR4CLE magma_mutation.lua
 -- Drop egg ke lava di summit crater buat roll Magma Mutation
 local M = {}
 local LP = game:GetService("Players").LocalPlayer
 
 M.CraterCF = CFrame.new(-5102.8, 41405.6, -3489.1)
-M.RanchCF  = CFrame.new(0, 40313, 900)
+-- Ranch auto-detected via getRanch()
 
 local function hrp()
     local c = LP.Character
@@ -45,7 +62,7 @@ function M.attempt()
         p:InputHoldEnd()
     end
     task.wait(3)
-    tp(M.RanchCF)
+    tp(getRanch())
     return true, "Attempt terkirim"
 end
 
