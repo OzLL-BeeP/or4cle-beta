@@ -44,7 +44,6 @@ return function(sidebar, config, tabNames, onSwitch)
         c.CornerRadius = UDim.new(0, 6)
         c.Parent = btn
 
-        -- TEXT LABEL MANUAL
         local textLabel = Instance.new("TextLabel")
         textLabel.Name = "TabLabel"
         textLabel.Size = UDim2.new(1, -16, 1, 0)
@@ -57,7 +56,6 @@ return function(sidebar, config, tabNames, onSwitch)
         textLabel.TextXAlignment = Enum.TextXAlignment.Left
         textLabel.Parent = btn
 
-        -- underline
         local underline = Instance.new("Frame")
         underline.Name = "Underline"
         underline.Size = UDim2.new(0, 0, 0, 2)
