@@ -35,7 +35,6 @@ local autoFarm   = loadModule("modules/auto_farm.lua")
 local friendFarm = loadModule("modules/friend_farm.lua")
 autoFarm.inject({magma = magma, esp = esp})
 
--- TIER data (global, biar dipakai di semua tab)
 local TIER_COLORS = {
     Common   = Color3.fromRGB(180, 180, 180),
     Rare     = Color3.fromRGB(80, 160, 255),
@@ -60,7 +59,9 @@ local espEnabled = false
 local tabContents = {}
 
 local function getTab(name)
-    if tabContents[name] then return tabContents[name] end
+    if tabContents[name] then
+        return tabContents[name]
+    end
     local holder = U.new("Frame", {
         Name = "Tab_" .. name,
         Size = UDim2.new(1, 0, 0, 0),
@@ -81,7 +82,9 @@ local function refreshTabs(activeName)
 end
 
 local tabNames = {"Visuals", "Farm", "Friend", "Utility", "Settings"}
-for _, n in ipairs(tabNames) do getTab(n) end
+for _, n in ipairs(tabNames) do
+    getTab(n)
+end
 
 local _, showTab = makeTabs(sidebar, config, tabNames, refreshTabs)
 
@@ -114,7 +117,6 @@ end)
 -- ============================================
 local fTab = getTab("Farm")
 
--- RARITY FILTER
 makeSection(fTab, config, 0, "RARITY FILTER")
 
 local currentMinTier = "Common"
@@ -130,7 +132,6 @@ makeOptionPicker(fTab, config, 40, {
     autoFarm.setMinTier(tier)
 end)
 
--- TELEPORT
 makeSection(fTab, config, 92, "TELEPORT")
 makeButton(fTab, config, 132, "TP to Nearest Egg", function()
     teleport.tpNearest()
@@ -139,7 +140,6 @@ makeButton(fTab, config, 172, "TP to Highest Tier Egg", function()
     teleport.tpHighestFiltered(currentMinTier)
 end)
 
--- AUTO FARM
 makeSection(fTab, config, 224, "AUTO FARM")
 makeToggle(fTab, config, 264, "Enable Auto Farm", false, function(v)
     autoFarm.toggle(v)
@@ -161,7 +161,6 @@ makeToggle(fTab, config, 400, "Auto Magma Mutation", false, function(v)
     autoFarm.setMagma(v)
 end)
 
--- VOLCANIC
 makeSection(fTab, config, 452, "VOLCANIC")
 makeButton(fTab, config, 492, "Grab Volcanic Egg", function()
     local ok, msg = lava.grab()
@@ -317,7 +316,6 @@ local bubble = makeBubble(gui, config, function()
     end
 end)
 
--- drag window
 local wDrag, wStart, wPos
 topBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
