@@ -1,6 +1,5 @@
 local U = loadstring(game:HttpGet("https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/util.lua"))()
 
--- opts: { label, options, colors, default }
 return function(parent, config, y, opts, callback)
     local options = opts.options or {"A", "B", "C"}
     local colors  = opts.colors or {}
@@ -55,19 +54,29 @@ return function(parent, config, y, opts, callback)
     chevron.Parent = btn
 
     -- === DROPDOWN — parent ke parent (di atas window, bukan di dalam btn) ===
-    -- Kita parent ke parent dari btn biar bisa ke luar batas tab
     local dropParent = parent.Parent or parent
 
-    -- konversi posisi btn ke drop parent
+    -- helper: hitung posisi dropdown (dengan guard nil)
     local function calcDropPos()
-        local btnAbs = btn.AbsolutePosition
-        local parentAbs = dropParent.AbsolutePosition
+        local btnAbs = btn.AbsolutePosition or Vector2.new(0, 0)
+        local parentAbs = dropParent.AbsolutePosition or Vector2.new(0, 0)
         return UDim2.fromOffset(btnAbs.X - parentAbs.X, btnAbs.Y - parentAbs.Y + 40)
+    end
+
+    -- helper: hitung lebar btn (fallback ke offset kalau scale)
+    local function calcBtnWidth()
+        local w = btn.Size.X.Offset
+        if btn.Size.X.Scale > 0 then
+            local parentW = dropParent.AbsoluteSize and dropParent.AbsoluteSize.X or 300
+            w = parentW * btn.Size.X.Scale + btn.Size.X.Offset
+        end
+        if w <= 0 then w = 300 end
+        return w
     end
 
     local drop = Instance.new("Frame")
     drop.Name = "PickerDropdown"
-    drop.Size = UDim2.new(0, btn.AbsoluteSize.X, 0, 0)
+    drop.Size = UDim2.new(0, calcBtnWidth(), 0, 0)
     drop.Position = calcDropPos()
     drop.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
     drop.BackgroundTransparency = 1
@@ -87,7 +96,6 @@ return function(parent, config, y, opts, callback)
     ds.Transparency = 1
     ds.Parent = drop
 
-    -- container untuk row
     local inner = Instance.new("Frame")
     inner.Name = "Inner"
     inner.Size = UDim2.new(1, 0, 0, totalH)
@@ -121,7 +129,8 @@ return function(parent, config, y, opts, callback)
         label.Text = prefix .. current
     end
 
-    for i, opt in ipairs(options) do
+    for i = 1, #options do
+        local opt = options[i]
         local row = Instance.new("Frame")
         row.Name = "Row_" .. tostring(opt)
         row.Size = UDim2.new(1, 0, 0, ROW_H)
@@ -148,7 +157,6 @@ return function(parent, config, y, opts, callback)
         tpad.PaddingLeft = UDim.new(0, 14)
         tpad.Parent = tbtn
 
-        -- garis pemisah bawah
         local line = Instance.new("Frame")
         line.Name = "Line"
         line.Size = UDim2.new(1, -20, 0, 1)
@@ -159,7 +167,6 @@ return function(parent, config, y, opts, callback)
         line.ZIndex = 53
         line.Parent = row
 
-        -- dot warna tier
         local dot = Instance.new("Frame")
         dot.Name = "Dot"
         dot.Size = UDim2.fromOffset(8, 8)
@@ -187,7 +194,6 @@ return function(parent, config, y, opts, callback)
             current = opt
             updateActive()
             if callback then callback(opt) end
-            -- close
             drop.Visible = false
             chevron.Text = "v"
             chevron.TextColor3 = Color3.fromRGB(158, 158, 184)
@@ -199,47 +205,36 @@ return function(parent, config, y, opts, callback)
 
     updateActive()
 
-    -- === TOGGLE ===
     local open = false
     btn.MouseButton1Click:Connect(function()
         open = not open
         if open then
-            -- update posisi (kalau window di-drag)
             drop.Position = calcDropPos()
-            drop.Size = UDim2.new(0, btn.AbsoluteSize.X, 0, 0)
+            drop.Size = UDim2.new(0, calcBtnWidth(), 0, 0)
             drop.Visible = true
-
-            -- fade in
             U.tween(drop, { BackgroundTransparency = 0.05 }, 0.18, "inout")
             U.tween(ds, { Transparency = 0 }, 0.18, "inout")
-            U.tween(drop, { Size = UDim2.new(0, btn.AbsoluteSize.X, 0, totalH + 8) }, 0.22, "out")
-
+            U.tween(drop, { Size = UDim2.new(0, calcBtnWidth(), 0, totalH + 8) }, 0.22, "out")
             chevron.Text = "^"
             chevron.TextColor3 = Color3.fromRGB(80, 200, 255)
             bs.Color = Color3.fromRGB(80, 160, 255)
         else
             U.tween(drop, { BackgroundTransparency = 1 }, 0.15, "inout")
             U.tween(ds, { Transparency = 1 }, 0.15, "inout")
-            U.tween(drop, { Size = UDim2.new(0, btn.AbsoluteSize.X, 0, 0) }, 0.18, "inout")
-
+            U.tween(drop, { Size = UDim2.new(0, calcBtnWidth(), 0, 0) }, 0.18, "inout")
             chevron.Text = "v"
             chevron.TextColor3 = Color3.fromRGB(158, 158, 184)
             bs.Color = Color3.fromRGB(42, 42, 63)
-
             task.delay(0.2, function()
                 if not open then drop.Visible = false end
             end)
         end
     end)
 
-    -- update posisi dropdown kalau window di-drag
-    if dropParent:FindFirstChildOfClass("UIScale") == nil then
-        -- nggak perlu UIScale, cukup listen ke perubahan AbsolutePosition
-    end
     task.spawn(function()
         local lastPos = Vector2.new()
         while btn.Parent do
-            local pos = btn.AbsolutePosition
+            local pos = btn.AbsolutePosition or Vector2.new()
             if pos.X ~= lastPos.X or pos.Y ~= lastPos.Y then
                 lastPos = pos
                 if open then
@@ -250,7 +245,6 @@ return function(parent, config, y, opts, callback)
         end
     end)
 
-    -- cleanup
     btn.Destroying:Connect(function()
         if drop then drop:Destroy() end
     end)
