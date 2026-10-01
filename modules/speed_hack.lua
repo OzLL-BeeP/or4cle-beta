@@ -3,8 +3,8 @@ local LP = game:GetService("Players").LocalPlayer
 local RunService = game:GetService("RunService")
 
 M.enabled = false
-M.speed = 32
-M.defaultSpeed = 16
+M.speed = 32          -- WalkSpeed target
+M.defaultSpeed = 16   -- WalkSpeed default Roblox
 M.smooth = true
 M.current = 16
 M.conn = nil
@@ -17,22 +17,22 @@ end
 local function step()
     local hum = getHum()
     if not hum then return end
+
     if M.enabled then
-        local target = M.speed
         if M.smooth then
-            M.current = M.current + (target - M.current) * 0.15
+            M.current = M.current + (M.speed - M.current) * 0.2
             hum.WalkSpeed = M.current
         else
-            hum.WalkSpeed = target
+            hum.WalkSpeed = M.speed
         end
     else
         if M.smooth then
-            M.current = M.current + (M.defaultSpeed - M.current) * 0.15
             if math.abs(M.current - M.defaultSpeed) < 0.5 then
                 M.current = M.defaultSpeed
                 hum.WalkSpeed = M.defaultSpeed
                 return
             end
+            M.current = M.current + (M.defaultSpeed - M.current) * 0.2
             hum.WalkSpeed = M.current
         else
             hum.WalkSpeed = M.defaultSpeed
@@ -46,7 +46,10 @@ function M.start()
 end
 
 function M.stop()
-    if M.conn then M.conn:Disconnect(); M.conn = nil end
+    if M.conn then
+        M.conn:Disconnect()
+        M.conn = nil
+    end
 end
 
 function M.toggle(on)
@@ -54,7 +57,14 @@ function M.toggle(on)
     if on then M.start() end
 end
 
-function M.setSpeed(v) M.speed = v end
+function M.setSpeed(v)
+    M.speed = math.clamp(v, 16, 200)
+end
+
+function M.getSpeed()
+    local hum = getHum()
+    return hum and hum.WalkSpeed or M.current
+end
 
 M.start()
 return M

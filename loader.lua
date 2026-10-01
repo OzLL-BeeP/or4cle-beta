@@ -1,4 +1,4 @@
--- OR4CLE v4 entry
+-- OR4CLE v5 entry
 local BASE = "https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/"
 
 local function loadModule(path)
@@ -20,6 +20,7 @@ local makeToggle  = loadModule("ui/components/toggle.lua")
 local makeButton  = loadModule("ui/components/button.lua")
 local makeSection = loadModule("ui/components/section.lua")
 local makeOptionPicker = loadModule("ui/components/option_picker.lua")
+local makeSpeedBubble  = loadModule("ui/components/speed_bubble.lua")
 
 local esp        = loadModule("modules/esp.lua")
 local teleport   = loadModule("modules/teleport.lua")
@@ -31,7 +32,20 @@ local speed      = loadModule("modules/speed_hack.lua")
 local antiAfk    = loadModule("modules/anti_afk.lua")
 local hop        = loadModule("modules/server_hop.lua")
 local autoFarm   = loadModule("modules/auto_farm.lua")
+local friendFarm = loadModule("modules/friend_farm.lua")
 autoFarm.inject({magma = magma, esp = esp})
+
+-- TIER data (global, biar dipakai di semua tab)
+local TIER_COLORS = {
+    Common   = Color3.fromRGB(180, 180, 180),
+    Rare     = Color3.fromRGB(80, 160, 255),
+    Epic     = Color3.fromRGB(180, 100, 255),
+    Legend   = Color3.fromRGB(255, 150, 50),
+    Mythic   = Color3.fromRGB(255, 80, 80),
+    Divine   = Color3.fromRGB(255, 215, 0),
+    Ethereal = Color3.fromRGB(255, 100, 255),
+}
+local TIER_LIST = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
 
 local gui = makeRoot()
 local espFolder = Instance.new("Folder")
@@ -66,7 +80,7 @@ local function refreshTabs(activeName)
     end
 end
 
-local tabNames = {"Visuals", "Farm", "Utility", "Settings"}
+local tabNames = {"Visuals", "Farm", "Friend", "Utility", "Settings"}
 for _, n in ipairs(tabNames) do getTab(n) end
 
 local _, showTab = makeTabs(sidebar, config, tabNames, refreshTabs)
@@ -100,25 +114,14 @@ end)
 -- ============================================
 local fTab = getTab("Farm")
 
--- RARITY FILTER (di Farm, bukan Visuals)
+-- RARITY FILTER
 makeSection(fTab, config, 0, "RARITY FILTER")
-
-local TIER_COLORS = {
-    Common   = Color3.fromRGB(180, 180, 180),
-    Rare     = Color3.fromRGB(80, 160, 255),
-    Epic     = Color3.fromRGB(180, 100, 255),
-    Legend   = Color3.fromRGB(255, 150, 50),
-    Mythic   = Color3.fromRGB(255, 80, 80),
-    Divine   = Color3.fromRGB(255, 215, 0),
-    Ethereal = Color3.fromRGB(255, 100, 255),
-}
-local tierOptions = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
 
 local currentMinTier = "Common"
 
 makeOptionPicker(fTab, config, 40, {
     label = "Min Tier: ",
-    options = tierOptions,
+    options = TIER_LIST,
     colors = TIER_COLORS,
     default = "Common",
 }, function(tier)
@@ -138,15 +141,13 @@ end)
 
 -- AUTO FARM
 makeSection(fTab, config, 224, "AUTO FARM")
-
 makeToggle(fTab, config, 264, "Enable Auto Farm", false, function(v)
     autoFarm.toggle(v)
 end)
 
-local modeOptions = {"Teleport", "Idle"}
 makeOptionPicker(fTab, config, 308, {
     label = "Mode: ",
-    options = modeOptions,
+    options = {"Teleport", "Idle"},
     default = "Teleport",
 }, function(mode)
     autoFarm.setMode(mode)
@@ -172,24 +173,96 @@ makeButton(fTab, config, 532, "Attempt Magma Mutation", function()
 end)
 
 -- ============================================
+-- TAB: FRIEND
+-- ============================================
+local frTab = getTab("Friend")
+
+makeSection(frTab, config, 0, "TARGET PLAYER")
+
+local function refreshFriendPicker()
+    if frTab:FindFirstChild("FriendPickerHolder") then
+        frTab.FriendPickerHolder:Destroy()
+    end
+    local holder = Instance.new("Frame")
+    holder.Name = "FriendPickerHolder"
+    holder.Size = UDim2.new(1, 0, 0, 0)
+    holder.AutomaticSize = Enum.AutomaticSize.Y
+    holder.BackgroundTransparency = 1
+    holder.Position = UDim2.fromOffset(0, 40)
+    holder.ZIndex = 2
+    holder.Parent = frTab
+
+    local names = friendFarm.getPlayerNames()
+    if #names == 0 then names = {"(no player)"} end
+
+    makeOptionPicker(holder, config, 0, {
+        label = "Target: ",
+        options = names,
+        default = names[1],
+    }, function(name)
+        local target = Players:FindFirstChild(name)
+        if target then friendFarm.setTarget(target) end
+    end)
+end
+
+refreshFriendPicker()
+
+makeButton(frTab, config, 88, "Refresh Player List", function()
+    refreshFriendPicker()
+end)
+
+makeSection(frTab, config, 130, "SHARE FILTER")
+makeOptionPicker(frTab, config, 170, {
+    label = "Min Tier to Share: ",
+    options = TIER_LIST,
+    colors = TIER_COLORS,
+    default = "Mythic",
+}, function(tier)
+    friendFarm.setMinTier(tier)
+end)
+
+makeSection(frTab, config, 220, "DELIVERY MODE")
+makeOptionPicker(frTab, config, 260, {
+    label = "Mode: ",
+    options = {"Teleport", "Idle"},
+    default = "Teleport",
+}, function(m)
+    friendFarm.setMode(m)
+end)
+
+makeSection(frTab, config, 310, "FRIEND FARM")
+makeToggle(frTab, config, 350, "Enable Friend Farm", false, function(v)
+    friendFarm.toggle(v)
+end)
+
+-- ============================================
 -- TAB: UTILITY
 -- ============================================
 local uTab = getTab("Utility")
 
 makeSection(uTab, config, 0, "MOVEMENT")
+
+local speedVal = 32
 makeToggle(uTab, config, 40, "Speed Hack", false, function(v)
     speed.toggle(v)
+    speed.setSpeed(speedVal)
 end)
 
-makeSection(uTab, config, 92, "AFK PROTECTION")
-makeToggle(uTab, config, 132, "Anti AFK", false, function(v)
+makeSpeedBubble(uTab, config, 84, "Speed", {
+    min = 16, max = 100, default = 32, suffix = "ws"
+}, function(v)
+    speedVal = v
+    if speed.enabled then speed.setSpeed(v) end
+end)
+
+makeSection(uTab, config, 176, "AFK PROTECTION")
+makeToggle(uTab, config, 216, "Anti AFK", false, function(v)
     antiAfk.toggle(v)
 end)
 
-makeSection(uTab, config, 184, "SERVER HOP")
-
+makeSection(uTab, config, 268, "SERVER HOP")
 local hopOptions = {"5 menit","10 menit","15 menit","20 menit","25 menit","30 menit","40 menit","50 menit"}
-makeOptionPicker(uTab, config, 224, {
+makeOptionPicker(uTab, config, 308, {
     label = "Interval: ",
     options = hopOptions,
     default = "10 menit",
@@ -199,11 +272,11 @@ makeOptionPicker(uTab, config, 224, {
     if hop.enabled then hop.stop(); hop.start() end
 end)
 
-makeToggle(uTab, config, 272, "Auto Server Hop", false, function(v)
+makeToggle(uTab, config, 356, "Auto Server Hop", false, function(v)
     hop.toggle(v)
 end)
 
-makeButton(uTab, config, 316, "Hop Now", function()
+makeButton(uTab, config, 400, "Hop Now", function()
     hop.hop()
 end)
 
@@ -226,6 +299,7 @@ makeButton(sTab, config, 132, "Unload OR4CLE", function()
     hop.toggle(false)
     autoTp.toggle(false)
     autoFarm.stop()
+    friendFarm.stop()
 end)
 
 -- ============================================
@@ -243,6 +317,7 @@ local bubble = makeBubble(gui, config, function()
     end
 end)
 
+-- drag window
 local wDrag, wStart, wPos
 topBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -273,4 +348,4 @@ game:GetService("RunService").Heartbeat:Connect(function()
     if espEnabled then esp.scan(espFolder) end
 end)
 
-print("[OR4CLE] v4 loaded")
+print("[OR4CLE] v5 loaded")
