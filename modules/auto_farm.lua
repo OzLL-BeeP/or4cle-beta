@@ -1,18 +1,19 @@
--- OR4CLE auto_farm.lua v2 — timer-aware
+-- OR4CLE auto_farm.lua v6 — timer-aware + magma mode
 local M = {}
 local LP = game:GetService("Players").LocalPlayer
 
 M.enabled = false
 M.mode = "Teleport"           -- "Teleport" | "Idle"
 M.minTier = "Common"
-M.returnToBase = true         -- pickup -> base -> loop (WAJIB on kalau ada timer)
+M.returnToBase = true
 M.loopDelay = 1.0
 M.magmaAuto = false
+M.magmaMode = "Teleport"      -- "Teleport" | "Idle"
 M.idleSpeed = 250
 
 M.stats = { farmed = 0, delivered = 0, magma = 0, startedAt = 0 }
 
-local magma, idleFly, esp  -- inject
+local magma, idleFly, esp
 
 local TIER_ORDER = { Common=1, Rare=2, Epic=3, Legend=4, Mythic=5, Divine=6, Ethereal=7 }
 
@@ -147,7 +148,7 @@ local function loop()
         if egg then
             local base = egg:FindFirstChild("EggBase") or egg:FindFirstChildWhichIsA("BasePart")
             if base then
-                -- 1. gerak ke egg (max 6 detik)
+                -- 1. gerak ke egg
                 moveTo(base.Position + Vector3.new(0, 2, 0), 5)
                 task.wait(0.2)
 
@@ -160,27 +161,26 @@ local function loop()
                     if hasEgg() then
                         M.stats.farmed = M.stats.farmed + 1
 
-                        -- 3. magma auto (opsional)
-                        if M.magmaAuto and magma and magma.dropEgg then
-                            local okDrop = magma.dropEgg()
+                        -- 3. magma mode
+                        if M.magmaAuto and magma and magma.dropAndRetrieve then
+                            -- set magma mode sama dengan auto farm mode (atau magmaMode)
+                            if magma.setMode then magma.setMode(M.magmaMode) end
+                            local okDrop = magma.dropAndRetrieve()
                             if okDrop then M.stats.magma = M.stats.magma + 1 end
                         end
 
-                        -- 4. bawa ke base SEGERA (timer jalan)
+                        -- 4. bawa ke base
                         if M.returnToBase then
                             local basePos = getBasePos()
                             if basePos then
-                                -- buffer 7 detik (timer 20, sisain 13 detik buat pickup)
                                 moveTo(basePos, 7)
                                 task.wait(0.3)
 
-                                -- 5. drop di base
                                 local dropP = findDropPromptAt(basePos)
                                 if dropP then
                                     firePrompt(dropP)
                                     task.wait(0.5)
                                 else
-                                    -- gak ada prompt, diem di base 1.5 detik
                                     task.wait(1.5)
                                 end
 
@@ -215,6 +215,10 @@ function M.setMinTier(t) M.minTier = t end
 function M.setReturn(on) M.returnToBase = on end
 function M.setDelay(d) M.loopDelay = d end
 function M.setMagma(on) M.magmaAuto = on end
+function M.setMagmaMode(m)
+    M.magmaMode = m
+    if magma and magma.setMode then magma.setMode(m) end
+end
 function M.setIdleSpeed(s)
     M.idleSpeed = s
     if idleFly then idleFly.setSpeed(s) end
@@ -224,6 +228,9 @@ function M.inject(deps)
     magma = deps.magma
     idleFly = deps.idleFly
     esp = deps.esp
+    if magma and magma.inject then
+        magma.inject({idleFly = idleFly})
+    end
 end
 
 function M.findBestEggPublic() return findBestEgg() end

@@ -8,7 +8,7 @@ end
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 
--- ============ LOAD MODULES ============
+-- Load modules
 local config      = loadModule("config.lua")
 local U           = loadModule("util.lua")
 local makeRoot    = loadModule("root.lua")
@@ -37,8 +37,9 @@ local autoFarm   = loadModule("modules/auto_farm.lua")
 local friendFarm = loadModule("modules/friend_farm.lua")
 
 autoFarm.inject({magma = magma, esp = esp, idleFly = idleFly})
+magma.inject({idleFly = idleFly})
 
--- ============ TIER DATA ============
+-- TIER data
 local TIER_COLORS = {
     Common   = Color3.fromRGB(180, 180, 180),
     Rare     = Color3.fromRGB(80, 160, 255),
@@ -50,7 +51,7 @@ local TIER_COLORS = {
 }
 local TIER_LIST = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
 
--- ============ ROOT ============
+-- Root
 local gui = makeRoot()
 local espFolder = Instance.new("Folder")
 espFolder.Name = "ESP"
@@ -60,7 +61,7 @@ local window, topBar, searchInput = makeWindow(gui, config)
 local sidebar = makeSidebar(window, config)
 local content, scroll = makeContent(window, config)
 
--- ============ TAB SYSTEM ============
+-- Tab system
 local espEnabled = false
 local tabContents = {}
 
@@ -110,7 +111,6 @@ makeToggle(vTab, config, 40, "Enable Egg ESP", false, function(v)
     if not v then esp.clear() end
 end)
 
--- ESP RARITY (independen dari Farm)
 makeSection(vTab, config, 92, "ESP RARITY")
 makeOptionPicker(vTab, config, 132, {
     label = "ESP Min Tier: ",
@@ -121,7 +121,6 @@ makeOptionPicker(vTab, config, 132, {
     esp.setMinTier(tier)
 end)
 
--- ESP STYLE
 makeSection(vTab, config, 184, "ESP STYLE")
 makeOptionPicker(vTab, config, 224, {
     label = "Style: ",
@@ -131,7 +130,6 @@ makeOptionPicker(vTab, config, 224, {
     esp.setStyle(style)
 end)
 
--- ESP SETTINGS
 makeSection(vTab, config, 276, "ESP SETTINGS")
 makeToggle(vTab, config, 316, "Show Distance", true, function(v)
     esp.showDistance = v
@@ -150,13 +148,12 @@ makeSection(fTab, config, 0, "RARITY FILTER")
 local currentMinTier = "Common"
 
 makeOptionPicker(fTab, config, 40, {
-    label = "Min Tier: ",
+    label = "Farm Min Tier: ",
     options = TIER_LIST,
     colors = TIER_COLORS,
     default = "Common",
 }, function(tier)
     currentMinTier = tier
-    esp.setMinTier(tier)
     autoFarm.setMinTier(tier)
 end)
 
@@ -189,13 +186,17 @@ makeToggle(fTab, config, 400, "Auto Magma Mutation", false, function(v)
     autoFarm.setMagma(v)
 end)
 
-makeSection(fTab, config, 452, "VOLCANIC")
-makeButton(fTab, config, 492, "Grab Volcanic Egg", function()
-    local ok, msg = lava.grab()
-    print("[OR4CLE]", ok, msg)
+makeOptionPicker(fTab, config, 444, {
+    label = "Magma Mode: ",
+    options = {"Teleport", "Idle"},
+    default = "Teleport",
+}, function(m)
+    autoFarm.setMagmaMode(m)
 end)
-makeButton(fTab, config, 532, "Attempt Magma Mutation", function()
-    local ok, msg = magma.attempt()
+
+makeSection(fTab, config, 496, "VOLCANIC")
+makeButton(fTab, config, 536, "Grab Volcanic Egg", function()
+    local ok, msg = lava.grab()
     print("[OR4CLE]", ok, msg)
 end)
 
@@ -344,9 +345,7 @@ local bubble = makeBubble(gui, config, function()
     end
 end)
 
--- ============================================
--- DRAG WINDOW
--- ============================================
+-- Drag window
 local wDrag, wStart, wPos
 topBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -373,9 +372,7 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
--- ============================================
--- ESP LOOP
--- ============================================
+-- ESP loop
 game:GetService("RunService").Heartbeat:Connect(function()
     if espEnabled then
         esp.scan(espFolder)
