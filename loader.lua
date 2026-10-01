@@ -110,11 +110,33 @@ makeToggle(vTab, config, 40, "Enable Egg ESP", false, function(v)
     if not v then esp.clear() end
 end)
 
-makeSection(vTab, config, 92, "ESP SETTINGS")
-makeToggle(vTab, config, 132, "Show Distance", true, function(v)
+-- ESP RARITY (independen dari Farm)
+makeSection(vTab, config, 92, "ESP RARITY")
+makeOptionPicker(vTab, config, 132, {
+    label = "ESP Min Tier: ",
+    options = TIER_LIST,
+    colors = TIER_COLORS,
+    default = "Common",
+}, function(tier)
+    esp.setMinTier(tier)
+end)
+
+-- ESP STYLE
+makeSection(vTab, config, 184, "ESP STYLE")
+makeOptionPicker(vTab, config, 224, {
+    label = "Style: ",
+    options = {"Panel", "Bracket"},
+    default = "Panel",
+}, function(style)
+    esp.setStyle(style)
+end)
+
+-- ESP SETTINGS
+makeSection(vTab, config, 276, "ESP SETTINGS")
+makeToggle(vTab, config, 316, "Show Distance", true, function(v)
     esp.showDistance = v
 end)
-makeToggle(vTab, config, 176, "Show Tracer", true, function(v)
+makeToggle(vTab, config, 360, "Show Tracer", true, function(v)
     esp.showTracer = v
 end)
 
