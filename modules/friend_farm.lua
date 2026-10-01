@@ -43,30 +43,71 @@ local function passFilter(tier)
     return (TIER_ORDER[tier] or 0) >= (TIER_ORDER[M.minTier] or 0)
 end
 
--- OWNER ada di Plot.Data.Owner
-local function getTargetPlot()
-    if not M.targetPlayer then return nil end
+-- ============ AMBIL PLOT TARGET (BERDASARKAN NAMA) ============
+local function getTargetPlotCF()
+    if not M.targetPlayer then
+        return nil, "targetPlayer nil"
+    end
+
+    -- pastiin targetPlayer itu Player instance
+    local targetName = typeof(M.targetPlayer) == "Instance" and M.targetPlayer.Name or tostring(M.targetPlayer)
+    local targetPlayer = Players:FindFirstChild(targetName)
+    if not targetPlayer then
+        return nil, "target player gak ada di server"
+    end
+
+    -- jangan bawa ke base sendiri
+    if targetPlayer == LP then
+        return nil, "target = diri sendiri (skip)"
+    end
+
     local plots = workspace:FindFirstChild("Plots")
-    if not plots then return nil end
+    if not plots then
+        return nil, "Plots folder gak ada"
+    end
+
     for _, plot in ipairs(plots:GetChildren()) do
         local data = plot:FindFirstChild("Data")
         local owner = data and data:FindFirstChild("Owner")
-        if owner and owner.Value == M.targetPlayer then
+        if owner and owner.Value and owner.Value == targetPlayer then
             local ok, cf = pcall(function() return plot:GetPivot() end)
-            if ok then return cf, plot end
+            if ok then return cf, "found plot: " .. plot.Name end
             local eggs = plot:FindFirstChild("Eggs")
             if eggs then
                 local base = eggs:FindFirstChildWhichIsA("BasePart")
-                if base then return base.CFrame, plot end
+                if base then return base.CFrame, "found via Eggs" end
             end
             local nests = plot:FindFirstChild("Nests")
             if nests then
                 local nest = nests:GetChildren()[1]
                 if nest then
                     local base = nest:FindFirstChildWhichIsA("BasePart")
-                    if base then return base.CFrame, plot end
+                    if base then return base.CFrame, "found via Nests" end
                 end
             end
+        end
+    end
+
+    -- fallback: cari karakter target di workspace
+    local targetChar = workspace:FindFirstChild(targetName)
+    if targetChar then
+        local th = targetChar:FindFirstChild("HumanoidRootPart")
+        if th then return th.CFrame, "found via workspace char" end
+    end
+
+    return nil, "plot target gak ketemu"
+end
+
+-- ============ BASE SENDIRI (fallback ke sini setelah drop) ============
+local function getOwnBaseCF()
+    local plots = workspace:FindFirstChild("Plots")
+    if not plots then return nil end
+    for _, plot in ipairs(plots:GetChildren()) do
+        local data = plot:FindFirstChild("Data")
+        local owner = data and data:FindFirstChild("Owner")
+        if owner and owner.Value and owner.Value == LP then
+            local ok, cf = pcall(function() return plot:GetPivot() end)
+            if ok then return cf end
         end
     end
     return nil
@@ -161,9 +202,14 @@ local function findDropPromptAt(cf)
     return nil
 end
 
+-- ============ DROP KE BASE TARGET ============
 local function dropAtTarget()
-    local plotCF = getTargetPlot()
-    if not plotCF then return false, "Target plot gak ketemu" end
+    local plotCF, reason = getTargetPlotCF()
+    if not plotCF then
+        return false, reason or "target plot gak ketemu"
+    end
+
+    -- gerak ke plot target
     if M.mode == "Teleport" then
         tp(plotCF)
         task.wait(0.5)
@@ -171,6 +217,8 @@ local function dropAtTarget()
         idleMoveTo(plotCF.Position, 15)
         task.wait(0.3)
     end
+
+    -- cari prompt drop di sana
     local prompt = findDropPromptAt(plotCF)
     if prompt then
         if fireproximityprompt then
@@ -183,50 +231,56 @@ local function dropAtTarget()
         task.wait(0.8)
         return true, "Dropped via prompt"
     end
-    -- diem di plot target 1.5 detik biar server detect
-    task.wait(1.5)
-    return true, "Diem di plot target"
+
+    -- gak ada prompt: diam 2 detik biar target bisa pickup manual
+    task.wait(2)
+    return true, "Diem di base target (manual pickup)"
 end
 
-local function backToRanch()
-    local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in ipairs(plots:GetChildren()) do
-            local data = plot:FindFirstChild("Data")
-            local owner = data and data:FindFirstChild("Owner")
-            if owner and owner.Value == LP then
-                local ok, cf = pcall(function() return plot:GetPivot() end)
-                if ok then
-                    if M.mode == "Teleport" then
-                        tp(cf)
-                    else
-                        idleMoveTo(cf.Position, 15)
-                    end
-                    task.wait(0.3)
-                end
-                return
-            end
-        end
+-- ============ BALIK KE BASE SENDIRI ============
+local function backToOwnBase()
+    local cf = getOwnBaseCF()
+    if not cf then return end
+    if M.mode == "Teleport" then
+        tp(cf)
+        task.wait(0.3)
+    else
+        idleMoveTo(cf.Position, 15)
+        task.wait(0.3)
     end
 end
 
+-- ============ LOOP ============
 local thread
 local function loop()
     while M.enabled do
-        if M.targetPlayer then
-            local egg = findBestEgg()
-            if egg then
-                local picked = pickEgg(egg)
-                if picked then
-                    M.stats.farmed = M.stats.farmed + 1
-                    task.wait(0.3)
-                    if hasEgg() then
-                        local ok = dropAtTarget()
-                        if ok then
-                            M.stats.shared = M.stats.shared + 1
-                            task.wait(0.5)
+        -- guard: kalau gak ada target, stop
+        if not M.targetPlayer then
+            task.wait(1)
+        else
+            -- guard: kalau masih bawa egg (dari iterasi sebelumnya), bawa ke target
+            if hasEgg() then
+                local ok, reason = dropAtTarget()
+                if ok then
+                    M.stats.shared = M.stats.shared + 1
+                    task.wait(0.5)
+                    backToOwnBase()
+                end
+            else
+                local egg = findBestEgg()
+                if egg then
+                    local picked = pickEgg(egg)
+                    if picked then
+                        M.stats.farmed = M.stats.farmed + 1
+                        task.wait(0.3)
+                        if hasEgg() then
+                            local ok, reason = dropAtTarget()
+                            if ok then
+                                M.stats.shared = M.stats.shared + 1
+                                task.wait(0.5)
+                            end
+                            backToOwnBase()
                         end
-                        backToRanch()
                     end
                 end
             end
@@ -256,6 +310,7 @@ function M.setTarget(player) M.targetPlayer = player end
 function M.setMinTier(t) M.minTier = t end
 function M.setMode(m) M.mode = m end
 
+-- list nama player di server (kecuali diri sendiri)
 function M.getPlayerNames()
     local list = {}
     for _, p in ipairs(Players:GetPlayers()) do
