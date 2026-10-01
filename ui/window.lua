@@ -28,7 +28,6 @@ return function(parent, config)
     })
     U.corner(outerGlow, config.RadiusWindow + 4)
 
-    -- border
     local stroke = U.stroke(window, U.rgb3(config.AccentA), 1.5)
     U.gradientMulti(stroke, {
         U.rgb3(config.AccentA),
@@ -47,7 +46,6 @@ return function(parent, config)
     })
     U.corner(topBar, config.RadiusWindow)
 
-    -- fix bottom corner
     local topBarFix = U.new("Frame", {
         Size = UDim2.new(1, 0, 0, 16),
         Position = UDim2.new(0, 0, 1, -16),
@@ -57,7 +55,6 @@ return function(parent, config)
         Parent = topBar,
     })
 
-    -- accent line
     local accent = U.new("Frame", {
         Name = "Accent",
         Size = UDim2.new(1, 0, 0, 1),
@@ -71,7 +68,6 @@ return function(parent, config)
         U.rgb3(config.AccentB),
     }, 0)
 
-    -- logo
     U.new("ImageLabel", {
         Name = "Logo",
         Size = UDim2.fromOffset(30, 30),
@@ -81,7 +77,6 @@ return function(parent, config)
         Parent = topBar,
     })
 
-    -- title
     U.title(topBar, {
         Size = UDim2.new(0, 140, 0, 18),
         Position = UDim2.fromOffset(56, 10),
@@ -89,7 +84,6 @@ return function(parent, config)
         TextSize = config.FontTitle,
     })
 
-    -- subtitle
     U.subtitle(topBar, {
         Size = UDim2.new(0, 200, 0, 14),
         Position = UDim2.fromOffset(56, 28),
@@ -99,7 +93,6 @@ return function(parent, config)
         TextSize = config.FontTiny,
     })
 
-    -- search box
     local searchBox = U.new("Frame", {
         Name = "SearchBox",
         Size = UDim2.fromOffset(150, 30),
@@ -115,7 +108,7 @@ return function(parent, config)
     U.label(searchBox, {
         Size = UDim2.fromOffset(20, 20),
         Position = UDim2.fromOffset(10, 5),
-        Text = "⌕",
+        Text = "?",
         TextColor3 = U.rgb3(config.TextMuted),
         TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Center,
@@ -136,7 +129,6 @@ return function(parent, config)
         Parent = searchBox,
     })
 
-    -- fps counter
     local fpsBox = U.new("Frame", {
         Name = "FPSBox",
         Size = UDim2.fromOffset(44, 30),
@@ -172,14 +164,13 @@ return function(parent, config)
         end)
     end)
 
-    -- close button
     local closeBtn = U.new("TextButton", {
         Name = "CloseBtn",
         Size = UDim2.fromOffset(32, 32),
         Position = UDim2.new(1, -44, 0.5, -16),
         BackgroundColor3 = U.rgb3(config.BgElem),
         BorderSizePixel = 0,
-        Text = "×",
+        Text = "x",
         TextColor3 = U.rgb3(config.TextSecondary),
         Font = Enum.Font.GothamBold,
         TextSize = 20,
