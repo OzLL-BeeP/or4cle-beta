@@ -13,15 +13,11 @@ local TIER_COLOR = {
     Unknown  = Color3.fromRGB(120, 120, 120),
 }
 
--- ============ CONFIG ============
 M.minTier = "Common"
 M.showDistance = true
 M.showTracer = true
-M.showTierLabel = true
-M.showEggName = true
-M.style = "Panel"   -- "Panel" | "Bracket" | "Minimal"
+M.style = "Panel"   -- "Panel" | "Bracket"
 
--- ============ TIER DETECT ============
 function M.tierOf(name)
     local n = name:lower()
     if n:find("volcanic") or n:find("cherub") or n:find("solaris") or n:find("blackhole") or n:find("black hole") then return "Ethereal" end
@@ -39,11 +35,11 @@ local function passFilter(tier)
     return (TIER_ORDER[tier] or 0) >= (TIER_ORDER[M.minTier] or 0)
 end
 
--- ============ PANEL BUILDER ============
+-- ============ PANEL MODE ============
 local function makePanelBB(parent, egg, tier, color)
     local bb = Instance.new("BillboardGui")
     bb.Name = "OR4CLE_EggPanel"
-    bb.Size = UDim2.fromOffset(220, 100)
+    bb.Size = UDim2.fromOffset(220, 90)
     bb.StudsOffset = Vector3.new(0, 5, 0)
     bb.AlwaysOnTop = true
     bb.Adornee = egg
@@ -51,82 +47,42 @@ local function makePanelBB(parent, egg, tier, color)
     bb.LightInfluence = 0
     bb.Parent = parent
 
-    -- bracket corner (4 sudut)
-    local bracketHolder = Instance.new("Frame")
-    bracketHolder.Name = "BracketHolder"
-    bracketHolder.Size = UDim2.new(1, 20, 1, 20)
-    bracketHolder.Position = UDim2.fromScale(0.5, 0.5)
-    bracketHolder.AnchorPoint = Vector2.new(0.5, 0.5)
-    bracketHolder.BackgroundTransparency = 1
-    bracketHolder.Parent = bb
+    -- outer glow
+    local glow = Instance.new("Frame")
+    glow.Name = "Glow"
+    glow.Size = UDim2.new(1, 10, 1, 10)
+    glow.Position = UDim2.fromScale(0.5, 0.5)
+    glow.AnchorPoint = Vector2.new(0.5, 0.5)
+    glow.BackgroundColor3 = color
+    glow.BackgroundTransparency = 0.9
+    glow.BorderSizePixel = 0
+    glow.Parent = bb
+    local gc = Instance.new("UICorner")
+    gc.CornerRadius = UDim.new(0, 10)
+    gc.Parent = glow
 
-    local bracketSize = 12
-    local bracketThick = 2
-
-    local function makeBracket(pos, rotX, rotY)
-        local br = Instance.new("Frame")
-        br.Name = "Bracket"
-        br.Size = UDim2.fromOffset(bracketSize, bracketSize)
-        br.Position = pos
-        br.BackgroundTransparency = 1
-        br.Parent = bracketHolder
-
-        -- horizontal line
-        local h = Instance.new("Frame")
-        h.Size = UDim2.fromOffset(bracketSize, bracketThick)
-        h.Position = UDim2.fromOffset(rotX == -1 and bracketSize - bracketThick or 0, rotY == -1 and bracketSize - bracketThick or 0)
-        h.BackgroundColor3 = color
-        h.BorderSizePixel = 0
-        h.Parent = br
-
-        -- vertical line
-        local v = Instance.new("Frame")
-        v.Size = UDim2.fromOffset(bracketThick, bracketSize)
-        v.Position = UDim2.fromOffset(rotX == -1 and bracketSize - bracketThick or 0, rotY == -1 and bracketSize - bracketThick or 0)
-        v.BackgroundColor3 = color
-        v.BorderSizePixel = 0
-        v.Parent = br
-    end
-
-    -- 4 sudut
-    makeBracket(UDim2.fromOffset(0, 0), 1, 1)                                 -- top-left
-    makeBracket(UDim2.new(1, -bracketSize, 0, 0), -1, 1)                      -- top-right
-    makeBracket(UDim2.fromOffset(0, 0), 1, -1)                                -- bottom-left (adjust pos)
-    makeBracket(UDim2.new(1, -bracketSize, 1, -bracketSize), -1, -1)          -- bottom-right
-
-    -- fix bottom-left position
-    local children = bracketHolder:GetChildren()
-    for _, c in ipairs(children) do
-        if c:IsA("Frame") and c.Position.Y.Offset > 0 then
-            c.Position = UDim2.new(0, 0, 1, -bracketSize)
-        end
-    end
-
-    -- panel info (di tengah)
+    -- main panel
     local panel = Instance.new("Frame")
-    panel.Name = "InfoPanel"
-    panel.Size = UDim2.fromOffset(180, 44)
-    panel.Position = UDim2.fromScale(0.5, 0.5)
-    panel.AnchorPoint = Vector2.new(0.5, 0.5)
+    panel.Name = "Panel"
+    panel.Size = UDim2.fromScale(1, 1)
     panel.BackgroundColor3 = Color3.fromRGB(8, 8, 16)
-    panel.BackgroundTransparency = 0.15
+    panel.BackgroundTransparency = 0.1
     panel.BorderSizePixel = 0
     panel.Parent = bb
-
     local pc = Instance.new("UICorner")
-    pc.CornerRadius = UDim.new(0, 6)
+    pc.CornerRadius = UDim.new(0, 8)
     pc.Parent = panel
 
     local ps = Instance.new("UIStroke")
     ps.Color = color
     ps.Thickness = 1.5
-    ps.Transparency = 0.2
+    ps.Transparency = 0.1
     ps.Parent = panel
 
     -- top accent bar
     local topBar = Instance.new("Frame")
-    topBar.Size = UDim2.new(1, -12, 0, 2)
-    topBar.Position = UDim2.fromOffset(6, 6)
+    topBar.Size = UDim2.new(1, -16, 0, 3)
+    topBar.Position = UDim2.fromOffset(8, 6)
     topBar.BackgroundColor3 = color
     topBar.BorderSizePixel = 0
     topBar.Parent = panel
@@ -134,10 +90,10 @@ local function makePanelBB(parent, egg, tier, color)
     tbc.CornerRadius = UDim.new(1, 0)
     tbc.Parent = topBar
 
-    -- tier label (kiri atas)
+    -- tier row: dot + label
     local dot = Instance.new("Frame")
     dot.Size = UDim2.fromOffset(6, 6)
-    dot.Position = UDim2.fromOffset(10, 14)
+    dot.Position = UDim2.fromOffset(12, 16)
     dot.BackgroundColor3 = color
     dot.BorderSizePixel = 0
     dot.Parent = panel
@@ -148,7 +104,7 @@ local function makePanelBB(parent, egg, tier, color)
     local tierLbl = Instance.new("TextLabel")
     tierLbl.Name = "TierLbl"
     tierLbl.Size = UDim2.new(1, -30, 0, 12)
-    tierLbl.Position = UDim2.fromOffset(22, 11)
+    tierLbl.Position = UDim2.fromOffset(24, 13)
     tierLbl.BackgroundTransparency = 1
     tierLbl.Text = tier:upper()
     tierLbl.TextColor3 = color
@@ -160,22 +116,43 @@ local function makePanelBB(parent, egg, tier, color)
     -- egg name
     local nameLbl = Instance.new("TextLabel")
     nameLbl.Name = "NameLbl"
-    nameLbl.Size = UDim2.new(1, -12, 0, 16)
-    nameLbl.Position = UDim2.fromOffset(6, 24)
+    nameLbl.Size = UDim2.new(1, -20, 0, 18)
+    nameLbl.Position = UDim2.fromOffset(10, 32)
     nameLbl.BackgroundTransparency = 1
     nameLbl.Text = egg.Name
     nameLbl.TextColor3 = Color3.fromRGB(245, 245, 250)
     nameLbl.Font = Enum.Font.GothamBold
-    nameLbl.TextSize = 12
+    nameLbl.TextSize = 13
     nameLbl.TextXAlignment = Enum.TextXAlignment.Left
     nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
     nameLbl.Parent = panel
 
-    -- distance (kanan bawah)
+    -- distance row (bar + text)
+    local distBg = Instance.new("Frame")
+    distBg.Name = "DistBg"
+    distBg.Size = UDim2.new(1, -20, 0, 4)
+    distBg.Position = UDim2.fromOffset(10, 58)
+    distBg.BackgroundColor3 = Color3.fromRGB(30, 30, 44)
+    distBg.BorderSizePixel = 0
+    distBg.Parent = panel
+    local dbc = Instance.new("UICorner")
+    dbc.CornerRadius = UDim.new(1, 0)
+    dbc.Parent = distBg
+
+    local distFill = Instance.new("Frame")
+    distFill.Name = "DistFill"
+    distFill.Size = UDim2.new(0.5, 0, 1, 0)
+    distFill.BackgroundColor3 = color
+    distFill.BorderSizePixel = 0
+    distFill.Parent = distBg
+    local dfc = Instance.new("UICorner")
+    dfc.CornerRadius = UDim.new(1, 0)
+    dfc.Parent = distFill
+
     local distLbl = Instance.new("TextLabel")
     distLbl.Name = "DistLbl"
-    distLbl.Size = UDim2.new(0.5, -6, 0, 12)
-    distLbl.Position = UDim2.new(0.5, 0, 0, 44)
+    distLbl.Size = UDim2.new(1, -20, 0, 12)
+    distLbl.Position = UDim2.fromOffset(10, 66)
     distLbl.BackgroundTransparency = 1
     distLbl.Text = "0 studs"
     distLbl.TextColor3 = Color3.fromRGB(180, 180, 200)
@@ -188,14 +165,16 @@ local function makePanelBB(parent, egg, tier, color)
     panel.BackgroundTransparency = 1
     topBar.BackgroundTransparency = 1
     dot.BackgroundTransparency = 1
+    distFill.BackgroundTransparency = 1
     tierLbl.TextTransparency = 1
     nameLbl.TextTransparency = 1
     distLbl.TextTransparency = 1
     task.spawn(function()
         task.wait(0.05)
-        panel.BackgroundTransparency = 0.15
+        panel.BackgroundTransparency = 0.1
         topBar.BackgroundTransparency = 0
         dot.BackgroundTransparency = 0
+        distFill.BackgroundTransparency = 0
         tierLbl.TextTransparency = 0
         nameLbl.TextTransparency = 0
         distLbl.TextTransparency = 0
@@ -204,11 +183,11 @@ local function makePanelBB(parent, egg, tier, color)
     return bb
 end
 
--- ============ BRACKET ONLY ============
+-- ============ BRACKET MODE (Upgrade) ============
 local function makeBracketBB(parent, egg, tier, color)
     local bb = Instance.new("BillboardGui")
     bb.Name = "OR4CLE_EggBracket"
-    bb.Size = UDim2.fromOffset(120, 120)
+    bb.Size = UDim2.fromOffset(140, 140)
     bb.StudsOffset = Vector3.new(0, 3, 0)
     bb.AlwaysOnTop = true
     bb.Adornee = egg
@@ -216,55 +195,130 @@ local function makeBracketBB(parent, egg, tier, color)
     bb.LightInfluence = 0
     bb.Parent = parent
 
+    -- bracket container
     local holder = Instance.new("Frame")
+    holder.Name = "Holder"
     holder.Size = UDim2.fromScale(1, 1)
     holder.BackgroundTransparency = 1
     holder.Parent = bb
 
-    local bracketSize = 16
-    local bracketThick = 2
+    local brSize = 18
+    local brThick = 2
 
     local positions = {
-        {UDim2.fromOffset(0, 0), 1, 1},
-        {UDim2.new(1, -bracketSize, 0, 0), -1, 1},
-        {UDim2.new(0, 0, 1, -bracketSize), 1, -1},
-        {UDim2.new(1, -bracketSize, 1, -bracketSize), -1, -1},
+        {UDim2.fromOffset(0, 0), 0, 0},
+        {UDim2.new(1, -brSize, 0, 0), 1, 0},
+        {UDim2.new(0, 0, 1, -brSize), 0, 1},
+        {UDim2.new(1, -brSize, 1, -brSize), 1, 1},
     }
 
     for _, p in ipairs(positions) do
-        local pos, px, py = p[1], p[2], p[3]
-        local br = Instance.new("Frame")
-        br.Size = UDim2.fromOffset(bracketSize, bracketSize)
-        br.Position = pos
-        br.BackgroundTransparency = 1
-        br.Parent = holder
+        local pos, isRight, isBottom = p[1], p[2], p[3]
+        local corner = Instance.new("Frame")
+        corner.Size = UDim2.fromOffset(brSize, brSize)
+        corner.Position = pos
+        corner.BackgroundTransparency = 1
+        corner.Parent = holder
 
+        -- horizontal line
         local h = Instance.new("Frame")
-        h.Size = UDim2.fromOffset(bracketSize, bracketThick)
-        h.Position = UDim2.fromOffset(px == -1 and 0 or 0, py == -1 and bracketSize - bracketThick or 0)
+        h.Size = UDim2.fromOffset(brSize, brThick)
+        h.Position = UDim2.fromOffset(0, isBottom == 1 and brSize - brThick or 0)
         h.BackgroundColor3 = color
         h.BorderSizePixel = 0
-        h.Parent = br
+        h.Parent = corner
 
+        -- vertical line
         local v = Instance.new("Frame")
-        v.Size = UDim2.fromOffset(bracketThick, bracketSize)
-        v.Position = UDim2.fromOffset(px == -1 and bracketSize - bracketThick or 0, 0)
+        v.Size = UDim2.fromOffset(brThick, brSize)
+        v.Position = UDim2.fromOffset(isRight == 1 and brSize - brThick or 0, 0)
         v.BackgroundColor3 = color
         v.BorderSizePixel = 0
-        v.Parent = br
+        v.Parent = corner
     end
 
-    -- tier label kecil di atas bracket
+    -- info panel di atas bracket (bukan di dalam)
+    local topPanel = Instance.new("Frame")
+    topPanel.Name = "TopPanel"
+    topPanel.Size = UDim2.new(1, 0, 0, 32)
+    topPanel.Position = UDim2.new(0, 0, 0, -40)
+    topPanel.BackgroundColor3 = Color3.fromRGB(8, 8, 16)
+    topPanel.BackgroundTransparency = 0.15
+    topPanel.BorderSizePixel = 0
+    topPanel.Parent = bb
+    local tpc = Instance.new("UICorner")
+    tpc.CornerRadius = UDim.new(0, 6)
+    tpc.Parent = topPanel
+    local tps = Instance.new("UIStroke")
+    tps.Color = color
+    tps.Thickness = 1
+    tps.Transparency = 0.3
+    tps.Parent = topPanel
+
+    -- dot + tier
+    local dot = Instance.new("Frame")
+    dot.Size = UDim2.fromOffset(6, 6)
+    dot.Position = UDim2.fromOffset(8, 6)
+    dot.BackgroundColor3 = color
+    dot.BorderSizePixel = 0
+    dot.Parent = topPanel
+    local dc = Instance.new("UICorner")
+    dc.CornerRadius = UDim.new(1, 0)
+    dc.Parent = dot
+
     local tierLbl = Instance.new("TextLabel")
-    tierLbl.Size = UDim2.new(1, 0, 0, 14)
-    tierLbl.Position = UDim2.new(0, 0, 0, -18)
+    tierLbl.Name = "TierLbl"
+    tierLbl.Size = UDim2.new(1, -20, 0, 10)
+    tierLbl.Position = UDim2.fromOffset(18, 4)
     tierLbl.BackgroundTransparency = 1
     tierLbl.Text = tier:upper()
     tierLbl.TextColor3 = color
     tierLbl.Font = Enum.Font.GothamBold
-    tierLbl.TextSize = 10
-    tierLbl.TextStrokeTransparency = 0.3
-    tierLbl.Parent = bb
+    tierLbl.TextSize = 8
+    tierLbl.TextXAlignment = Enum.TextXAlignment.Left
+    tierLbl.Parent = topPanel
+
+    -- egg name
+    local nameLbl = Instance.new("TextLabel")
+    nameLbl.Name = "NameLbl"
+    nameLbl.Size = UDim2.new(1, -12, 0, 14)
+    nameLbl.Position = UDim2.fromOffset(6, 16)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text = egg.Name
+    nameLbl.TextColor3 = Color3.fromRGB(245, 245, 250)
+    nameLbl.Font = Enum.Font.GothamBold
+    nameLbl.TextSize = 10
+    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
+    nameLbl.Parent = topPanel
+
+    -- distance di bawah bracket
+    local distLbl = Instance.new("TextLabel")
+    distLbl.Name = "DistLbl"
+    distLbl.Size = UDim2.new(1, 0, 0, 16)
+    distLbl.Position = UDim2.new(0, 0, 1, 4)
+    distLbl.BackgroundTransparency = 1
+    distLbl.Text = "0 studs"
+    distLbl.TextColor3 = color
+    distLbl.Font = Enum.Font.Code
+    distLbl.TextSize = 10
+    distLbl.TextStrokeTransparency = 0.4
+    distLbl.Parent = bb
+
+    -- fade in
+    topPanel.BackgroundTransparency = 1
+    dot.BackgroundTransparency = 1
+    tierLbl.TextTransparency = 1
+    nameLbl.TextTransparency = 1
+    distLbl.TextTransparency = 1
+    task.spawn(function()
+        task.wait(0.05)
+        topPanel.BackgroundTransparency = 0.15
+        dot.BackgroundTransparency = 0
+        tierLbl.TextTransparency = 0
+        nameLbl.TextTransparency = 0
+        distLbl.TextTransparency = 0
+    end)
 
     return bb
 end
@@ -349,12 +403,23 @@ function M.scan(parent)
                     local base = egg:FindFirstChild("EggBase") or egg:FindFirstChildWhichIsA("BasePart")
                     if base then
                         local d = (base.Position - hrp.Position).Magnitude
-                        local panel = c.bb:FindFirstChild("InfoPanel")
+                        -- update distance di panel/bracket
+                        local panel = c.bb:FindFirstChild("Panel")
+                        local distLbl
+                        local distFill
                         if panel then
-                            local distLbl = panel:FindFirstChild("DistLbl")
-                            if distLbl then
-                                distLbl.Text = string.format("%d studs", math.floor(d))
-                            end
+                            distLbl = panel:FindFirstChild("DistLbl")
+                            local distBg = panel:FindFirstChild("DistBg")
+                            if distBg then distFill = distBg:FindFirstChild("DistFill") end
+                        else
+                            distLbl = c.bb:FindFirstChild("DistLbl")
+                        end
+                        if distLbl then
+                            distLbl.Text = string.format("%d studs", math.floor(d))
+                        end
+                        if distFill then
+                            local ratio = math.clamp(1 - (d / 2000), 0.05, 1)
+                            distFill.Size = UDim2.new(ratio, 0, 1, 0)
                         end
                         if c.att0 and c.att1 then
                             c.att0.WorldPosition = hrp.Position + Vector3.new(0, 2, 0)
