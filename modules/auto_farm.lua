@@ -1,17 +1,18 @@
+-- OR4CLE auto_farm.lua v2 — timer-aware
 local M = {}
 local LP = game:GetService("Players").LocalPlayer
 
 M.enabled = false
-M.mode = "Teleport"       -- "Teleport" | "Idle"
+M.mode = "Teleport"           -- "Teleport" | "Idle"
 M.minTier = "Common"
-M.returnToRanch = true
-M.loopDelay = 1.5
+M.returnToBase = true         -- pickup -> base -> loop (WAJIB on kalau ada timer)
+M.loopDelay = 1.0
 M.magmaAuto = false
-M.tpRange = 5
+M.idleSpeed = 250
 
-M.stats = { farmed = 0, mutations = 0, startedAt = 0 }
+M.stats = { farmed = 0, delivered = 0, magma = 0, startedAt = 0 }
 
-local magma, esp  -- inject
+local magma, idleFly, esp  -- inject
 
 local TIER_ORDER = { Common=1, Rare=2, Epic=3, Legend=4, Mythic=5, Divine=6, Ethereal=7 }
 
@@ -20,29 +21,9 @@ local function hrp()
     return c and c:FindFirstChild("HumanoidRootPart")
 end
 
-local function getHumanoid()
-    local c = LP.Character
-    return c and c:FindFirstChildOfClass("Humanoid")
-end
-
 local function tp(cf)
     local h = hrp()
     if h then h.CFrame = cf end
-end
-
-local function getRanch()
-    local plots = workspace:FindFirstChild("Plots")
-    if plots then
-        for _, plot in ipairs(plots:GetChildren()) do
-            local owner = plot:FindFirstChild("Owner")
-            if owner and owner.Value == LP then
-                local ok, cf = pcall(function() return plot:GetPivot() end)
-                if ok then return cf end
-            end
-        end
-    end
-    local h = hrp()
-    return h and h.CFrame or CFrame.new(0, 40313, 900)
 end
 
 local function tierOf(name)
@@ -63,27 +44,20 @@ local function passFilter(tier)
     return (TIER_ORDER[tier] or 0) >= (TIER_ORDER[M.minTier] or 0)
 end
 
-local function findPickupPrompt(egg)
-    for _, d in ipairs(egg:GetDescendants()) do
-        if d:IsA("ProximityPrompt") and d.ActionText:lower():find("pick") then
-            return d
+local function getBasePos()
+    local plots = workspace:FindFirstChild("Plots")
+    if plots then
+        for _, plot in ipairs(plots:GetChildren()) do
+            local owner = plot:FindFirstChild("Owner")
+            if owner and owner.Value == LP then
+                local ok, cf = pcall(function() return plot:GetPivot() end)
+                if ok then return cf.Position end
+            end
         end
     end
+    return nil
 end
 
-local function firePrompt(p)
-    if not p then return false end
-    if fireproximityprompt then
-        fireproximityprompt(p)
-        return true
-    end
-    p:InputHoldBegin()
-    task.wait((p.HoldDuration or 0) + 0.05)
-    p:InputHoldEnd()
-    return true
-end
-
--- cari egg dengan tier tertinggi, lalu terdekat
 local function findBestEgg()
     local re = workspace:FindFirstChild("RenderedEggs")
     if not re then return nil end
@@ -105,88 +79,114 @@ local function findBestEgg()
     return best
 end
 
--- idle movement
-local function idleMoveTo(pos, timeout)
-    local hum = getHumanoid()
-    if not hum then return false end
-    hum:MoveTo(pos)
-    local t = tick()
-    while tick() - t < (timeout or 10) do
-        local h = hrp()
-        if not h then break end
-        if (h.Position - pos).Magnitude < 4 then
-            hum:MoveTo(h.Position)
-            return true
+local function findPickupPrompt(egg)
+    for _, d in ipairs(egg:GetDescendants()) do
+        if d:IsA("ProximityPrompt") and d.ActionText:lower():find("pick") then
+            return d
         end
-        task.wait(0.1)
     end
-    hum:MoveTo(hum.RootPart and hum.RootPart.Position or pos)
-    return false
 end
 
-local function pickEgg(egg)
-    local base = egg:FindFirstChild("EggBase") or egg:FindFirstChildWhichIsA("BasePart")
-    if not base then return false end
-
-    if M.mode == "Teleport" then
-        tp(base.CFrame + Vector3.new(0, 3, 0))
-        task.wait(0.25)
-    else
-        idleMoveTo(base.Position, 12)
-        task.wait(0.25)
+local function findDropPromptAt(basePos)
+    for _, o in ipairs(workspace:GetDescendants()) do
+        if o:IsA("ProximityPrompt") then
+            local t = (o.ActionText .. " " .. o.ObjectText):lower()
+            if t:find("drop") or t:find("place") or t:find("nest") then
+                local parent = o.Parent
+                if parent and parent:IsA("BasePart") then
+                    if (parent.Position - basePos).Magnitude < 80 then return o end
+                end
+            end
+        end
     end
+    return nil
+end
 
-    local prompt = findPickupPrompt(egg)
-    if not prompt then return false end
-    firePrompt(prompt)
-    task.wait(0.6)
+local function firePrompt(p)
+    if not p then return false end
+    if fireproximityprompt then
+        fireproximityprompt(p)
+        return true
+    end
+    p:InputHoldBegin()
+    task.wait((p.HoldDuration or 0) + 0.05)
+    p:InputHoldEnd()
     return true
 end
 
--- deteksi apakah karakter udah bawa egg
 local function hasEgg()
-    local char = LP.Character
-    if not char then return false end
-    for _, obj in ipairs(char:GetDescendants()) do
-        if obj.Name:lower():find("egg") then return true end
+    local c = LP.Character
+    if not c then return false end
+    for _, o in ipairs(c:GetDescendants()) do
+        if o.Name:lower():find("egg") then return true end
     end
-    -- cek backpack
     local bp = LP:FindFirstChild("Backpack")
     if bp then
-        for _, obj in ipairs(bp:GetChildren()) do
-            if obj.Name:lower():find("egg") then return true end
+        for _, o in ipairs(bp:GetChildren()) do
+            if o.Name:lower():find("egg") then return true end
         end
     end
     return false
 end
 
--- ============ LOOP ============
+local function moveTo(targetPos, maxTime)
+    if M.mode == "Idle" and idleFly then
+        return idleFly.flyToTimed(targetPos, maxTime or 6)
+    else
+        tp(CFrame.new(targetPos))
+        task.wait(0.2)
+        return true
+    end
+end
+
 local thread
 local function loop()
     M.stats.startedAt = tick()
     while M.enabled do
         local egg = findBestEgg()
         if egg then
-            local ok = pickEgg(egg)
-            if ok then
-                M.stats.farmed = M.stats.farmed + 1
+            local base = egg:FindFirstChild("EggBase") or egg:FindFirstChildWhichIsA("BasePart")
+            if base then
+                -- 1. gerak ke egg (max 6 detik)
+                moveTo(base.Position + Vector3.new(0, 2, 0), 5)
+                task.wait(0.2)
 
-                -- magma auto (drop ke lava)
-                if M.magmaAuto and magma and magma.dropEgg then
-                    local okDrop, _ = magma.dropEgg()
-                    if okDrop then M.stats.mutations = M.stats.mutations + 1 end
-                    task.wait(0.5)
-                end
+                -- 2. pickup
+                local prompt = findPickupPrompt(egg)
+                if prompt then
+                    firePrompt(prompt)
+                    task.wait(0.4)
 
-                -- balik ke ranch
-                if M.returnToRanch then
-                    local ranch = getRanch()
-                    if M.mode == "Teleport" then
-                        tp(ranch)
-                        task.wait(0.4)
-                    else
-                        idleMoveTo(ranch.Position, 14)
-                        task.wait(0.3)
+                    if hasEgg() then
+                        M.stats.farmed = M.stats.farmed + 1
+
+                        -- 3. magma auto (opsional)
+                        if M.magmaAuto and magma and magma.dropEgg then
+                            local okDrop = magma.dropEgg()
+                            if okDrop then M.stats.magma = M.stats.magma + 1 end
+                        end
+
+                        -- 4. bawa ke base SEGERA (timer jalan)
+                        if M.returnToBase then
+                            local basePos = getBasePos()
+                            if basePos then
+                                -- buffer 7 detik (timer 20, sisain 13 detik buat pickup)
+                                moveTo(basePos, 7)
+                                task.wait(0.3)
+
+                                -- 5. drop di base
+                                local dropP = findDropPromptAt(basePos)
+                                if dropP then
+                                    firePrompt(dropP)
+                                    task.wait(0.5)
+                                else
+                                    -- gak ada prompt, diem di base 1.5 detik
+                                    task.wait(1.5)
+                                end
+
+                                M.stats.delivered = M.stats.delivered + 1
+                            end
+                        end
                     end
                 end
             end
@@ -204,8 +204,6 @@ end
 function M.stop()
     M.enabled = false
     thread = nil
-    local hum = getHumanoid()
-    if hum and hum.RootPart then hum:MoveTo(hum.RootPart.Position) end
 end
 
 function M.toggle(on)
@@ -214,12 +212,17 @@ end
 
 function M.setMode(m) M.mode = m end
 function M.setMinTier(t) M.minTier = t end
-function M.setReturn(on) M.returnToRanch = on end
+function M.setReturn(on) M.returnToBase = on end
 function M.setDelay(d) M.loopDelay = d end
 function M.setMagma(on) M.magmaAuto = on end
+function M.setIdleSpeed(s)
+    M.idleSpeed = s
+    if idleFly then idleFly.setSpeed(s) end
+end
 
 function M.inject(deps)
     magma = deps.magma
+    idleFly = deps.idleFly
     esp = deps.esp
 end
 

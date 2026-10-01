@@ -1,4 +1,4 @@
--- OR4CLE v6 entry
+-- OR4CLE v5 entry
 local BASE = "https://raw.githubusercontent.com/OzLL-BeeP/or4cle-beta/main/"
 
 local function loadModule(path)
@@ -8,7 +8,6 @@ end
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 
--- ============ LOAD MODULES ============
 local config      = loadModule("config.lua")
 local U           = loadModule("util.lua")
 local makeRoot    = loadModule("root.lua")
@@ -32,13 +31,10 @@ local autoTp     = loadModule("modules/auto_tp_egg.lua")
 local speed      = loadModule("modules/speed_hack.lua")
 local antiAfk    = loadModule("modules/anti_afk.lua")
 local hop        = loadModule("modules/server_hop.lua")
-local idleFly    = loadModule("modules/idle_fly.lua")
 local autoFarm   = loadModule("modules/auto_farm.lua")
 local friendFarm = loadModule("modules/friend_farm.lua")
-
 autoFarm.inject({magma = magma, esp = esp, idleFly = idleFly})
 
--- ============ TIER DATA ============
 local TIER_COLORS = {
     Common   = Color3.fromRGB(180, 180, 180),
     Rare     = Color3.fromRGB(80, 160, 255),
@@ -50,7 +46,6 @@ local TIER_COLORS = {
 }
 local TIER_LIST = {"Common","Rare","Epic","Legend","Mythic","Divine","Ethereal"}
 
--- ============ ROOT ============
 local gui = makeRoot()
 local espFolder = Instance.new("Folder")
 espFolder.Name = "ESP"
@@ -60,7 +55,6 @@ local window, topBar, searchInput = makeWindow(gui, config)
 local sidebar = makeSidebar(window, config)
 local content, scroll = makeContent(window, config)
 
--- ============ TAB SYSTEM ============
 local espEnabled = false
 local tabContents = {}
 
@@ -159,7 +153,7 @@ makeOptionPicker(fTab, config, 308, {
     autoFarm.setMode(mode)
 end)
 
-makeToggle(fTab, config, 356, "Return to Base", true, function(v)
+makeToggle(fTab, config, 356, "Return to Ranch", true, function(v)
     autoFarm.setReturn(v)
 end)
 
@@ -322,9 +316,6 @@ local bubble = makeBubble(gui, config, function()
     end
 end)
 
--- ============================================
--- DRAG WINDOW
--- ============================================
 local wDrag, wStart, wPos
 topBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1
@@ -351,13 +342,8 @@ UIS.InputChanged:Connect(function(input)
     end
 end)
 
--- ============================================
--- ESP LOOP
--- ============================================
 game:GetService("RunService").Heartbeat:Connect(function()
-    if espEnabled then
-        esp.scan(espFolder)
-    end
+    if espEnabled then esp.scan(espFolder) end
 end)
 
-print("[OR4CLE] v6 loaded")
+print("[OR4CLE] v5 loaded")
