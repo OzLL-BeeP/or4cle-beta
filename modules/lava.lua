@@ -8,7 +8,8 @@ local function getRanch()
     local plots = workspace:FindFirstChild("Plots")
     if plots then
         for _, plot in ipairs(plots:GetChildren()) do
-            local owner = plot:FindFirstChild("Owner")
+            local data = plot:FindFirstChild("Data")
+            local owner = data and data:FindFirstChild("Owner")
             if owner and owner.Value == LP then
                 local ok, cf = pcall(function() return plot:GetPivot() end)
                 if ok then return cf end

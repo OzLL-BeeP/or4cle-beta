@@ -1,4 +1,4 @@
--- OR4CLE auto_farm.lua v6 — timer-aware + magma mode
+-- OR4CLE auto_farm.lua v6 — timer-aware + magma retrieve + idle/teleport
 local M = {}
 local LP = game:GetService("Players").LocalPlayer
 
@@ -17,6 +17,7 @@ local magma, idleFly, esp
 
 local TIER_ORDER = { Common=1, Rare=2, Epic=3, Legend=4, Mythic=5, Divine=6, Ethereal=7 }
 
+-- ============ HELPERS ============
 local function hrp()
     local c = LP.Character
     return c and c:FindFirstChild("HumanoidRootPart")
@@ -45,20 +46,36 @@ local function passFilter(tier)
     return (TIER_ORDER[tier] or 0) >= (TIER_ORDER[M.minTier] or 0)
 end
 
+-- ============ GET BASE POS (Plot.Data.Owner) ============
 local function getBasePos()
     local plots = workspace:FindFirstChild("Plots")
     if plots then
         for _, plot in ipairs(plots:GetChildren()) do
-            local owner = plot:FindFirstChild("Owner")
+            local data = plot:FindFirstChild("Data")
+            local owner = data and data:FindFirstChild("Owner")
             if owner and owner.Value == LP then
                 local ok, cf = pcall(function() return plot:GetPivot() end)
                 if ok then return cf.Position end
+                local eggs = plot:FindFirstChild("Eggs")
+                if eggs then
+                    local base = eggs:FindFirstChildWhichIsA("BasePart")
+                    if base then return base.Position end
+                end
+                local nests = plot:FindFirstChild("Nests")
+                if nests then
+                    local nest = nests:GetChildren()[1]
+                    if nest then
+                        local base = nest:FindFirstChildWhichIsA("BasePart")
+                        if base then return base.Position end
+                    end
+                end
             end
         end
     end
     return nil
 end
 
+-- ============ FIND EGG ============
 local function findBestEgg()
     local re = workspace:FindFirstChild("RenderedEggs")
     if not re then return nil end
@@ -80,6 +97,7 @@ local function findBestEgg()
     return best
 end
 
+-- ============ PROMPTS ============
 local function findPickupPrompt(egg)
     for _, d in ipairs(egg:GetDescendants()) do
         if d:IsA("ProximityPrompt") and d.ActionText:lower():find("pick") then
@@ -115,6 +133,7 @@ local function firePrompt(p)
     return true
 end
 
+-- ============ HAS EGG? ============
 local function hasEgg()
     local c = LP.Character
     if not c then return false end
@@ -130,6 +149,7 @@ local function hasEgg()
     return false
 end
 
+-- ============ MOVE ============
 local function moveTo(targetPos, maxTime)
     if M.mode == "Idle" and idleFly then
         return idleFly.flyToTimed(targetPos, maxTime or 6)
@@ -140,6 +160,7 @@ local function moveTo(targetPos, maxTime)
     end
 end
 
+-- ============ LOOP ============
 local thread
 local function loop()
     M.stats.startedAt = tick()
@@ -152,7 +173,7 @@ local function loop()
                 moveTo(base.Position + Vector3.new(0, 2, 0), 5)
                 task.wait(0.2)
 
-                -- 2. pickup
+                -- 2. pickup egg
                 local prompt = findPickupPrompt(egg)
                 if prompt then
                     firePrompt(prompt)
@@ -161,26 +182,38 @@ local function loop()
                     if hasEgg() then
                         M.stats.farmed = M.stats.farmed + 1
 
-                        -- 3. magma mode
+                        -- 3. MAGMA MODE (kalau aktif)
                         if M.magmaAuto and magma and magma.dropAndRetrieve then
-                            -- set magma mode sama dengan auto farm mode (atau magmaMode)
                             if magma.setMode then magma.setMode(M.magmaMode) end
                             local okDrop = magma.dropAndRetrieve()
                             if okDrop then M.stats.magma = M.stats.magma + 1 end
+
+                            -- tunggu extra biar egg balik ke tangan
+                            task.wait(1)
+
+                            -- kalau egg GAK balik, tunggu lagi
+                            local retry = 0
+                            while not hasEgg() and retry < 5 do
+                                task.wait(0.5)
+                                retry = retry + 1
+                            end
                         end
 
                         -- 4. bawa ke base
                         if M.returnToBase then
                             local basePos = getBasePos()
                             if basePos then
-                                moveTo(basePos, 7)
+                                -- buffer 7 detik (timer 20, sisain 13 detik buat pickup + magma)
+                                moveTo(basePos, 8)
                                 task.wait(0.3)
 
+                                -- drop di base
                                 local dropP = findDropPromptAt(basePos)
                                 if dropP then
                                     firePrompt(dropP)
-                                    task.wait(0.5)
+                                    task.wait(0.8)
                                 else
+                                    -- gak ada prompt, diem di base 1.5 detik
                                     task.wait(1.5)
                                 end
 
@@ -195,6 +228,7 @@ local function loop()
     end
 end
 
+-- ============ PUBLIC API ============
 function M.start()
     if thread then return end
     M.enabled = true

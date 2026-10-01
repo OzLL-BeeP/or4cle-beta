@@ -2,7 +2,7 @@ local M = {}
 local LP = game:GetService("Players").LocalPlayer
 
 M.CraterCF = CFrame.new(-5102.8, 41405.6, -3489.1)
-M.mode = "Teleport"   -- "Teleport" | "Idle"
+M.mode = "Teleport"
 
 local idleFly
 
@@ -42,6 +42,19 @@ local function findDropPrompt()
     return nil
 end
 
+local function findPickupPrompt()
+    for _, o in ipairs(workspace:GetDescendants()) do
+        if o:IsA("ProximityPrompt") and o.ActionText:lower():find("pick") then
+            local parent = o.Parent
+            if parent and parent:IsA("BasePart") then
+                local d = (parent.Position - M.CraterCF.Position).Magnitude
+                if d < 200 then return o end
+            end
+        end
+    end
+    return nil
+end
+
 local function firePrompt(p)
     if not p then return false end
     if fireproximityprompt then
@@ -52,6 +65,21 @@ local function firePrompt(p)
     task.wait((p.HoldDuration or 0) + 0.05)
     p:InputHoldEnd()
     return true
+end
+
+local function hasEgg()
+    local c = LP.Character
+    if not c then return false end
+    for _, o in ipairs(c:GetDescendants()) do
+        if o.Name:lower():find("egg") then return true end
+    end
+    local bp = LP:FindFirstChild("Backpack")
+    if bp then
+        for _, o in ipairs(bp:GetChildren()) do
+            if o.Name:lower():find("egg") then return true end
+        end
+    end
+    return false
 end
 
 function M.dropAndRetrieve()
@@ -65,37 +93,47 @@ function M.dropAndRetrieve()
         return false, "Drop prompt gak ketemu"
     end
 
-    -- 3. fire prompt
+    -- 3. fire drop prompt
     firePrompt(p)
-    task.wait(0.5)
+    task.wait(0.3)
 
-    -- 4. tunggu roll server
-    task.wait(3.5)
-
-    -- 5. cek egg balik ke karakter
-    local char = LP.Character
-    local hasEgg = false
-    if char then
-        for _, obj in ipairs(char:GetDescendants()) do
-            if obj.Name:lower():find("egg") then
-                hasEgg = true
-                break
-            end
-        end
+    -- 4. tunggu egg "keluar" dari tangan (drop animasi)
+    local startWait = tick()
+    while hasEgg() and tick() - startWait < 2 do
+        task.wait(0.1)
     end
-    if not hasEgg then
-        local bp = LP:FindFirstChild("Backpack")
-        if bp then
-            for _, obj in ipairs(bp:GetChildren()) do
-                if obj.Name:lower():find("egg") then
-                    hasEgg = true
-                    break
-                end
-            end
+
+    -- 5. tunggu hasil roll dari server
+    -- (server roll ~3-4 detik, terus egg balik ke tangan)
+    task.wait(4)
+
+    -- 6. cek egg udah balik ke tangan
+    local eggBack = hasEgg()
+
+    -- 7. kalau belum balik, coba pickup ulang
+    if not eggBack then
+        local pickupP = findPickupPrompt()
+        if pickupP then
+            firePrompt(pickupP)
+            task.wait(0.8)
+            eggBack = hasEgg()
         end
     end
 
-    return true, hasEgg and "Egg returned" or "Egg dropped"
+    -- 8. kalau masih belum dapet, tunggu lagi
+    if not eggBack then
+        task.wait(2)
+        eggBack = hasEgg()
+    end
+
+    -- 9. diam di crater 1 detik (jangan langsung gerak)
+    task.wait(1)
+
+    if eggBack then
+        return true, "Egg retrieved (mutated or not)"
+    else
+        return true, "Egg dropped, belum balik"
+    end
 end
 
 function M.setMode(m) M.mode = m end

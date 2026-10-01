@@ -43,15 +43,30 @@ local function passFilter(tier)
     return (TIER_ORDER[tier] or 0) >= (TIER_ORDER[M.minTier] or 0)
 end
 
+-- OWNER ada di Plot.Data.Owner
 local function getTargetPlot()
     if not M.targetPlayer then return nil end
     local plots = workspace:FindFirstChild("Plots")
     if not plots then return nil end
     for _, plot in ipairs(plots:GetChildren()) do
-        local owner = plot:FindFirstChild("Owner")
+        local data = plot:FindFirstChild("Data")
+        local owner = data and data:FindFirstChild("Owner")
         if owner and owner.Value == M.targetPlayer then
             local ok, cf = pcall(function() return plot:GetPivot() end)
             if ok then return cf, plot end
+            local eggs = plot:FindFirstChild("Eggs")
+            if eggs then
+                local base = eggs:FindFirstChildWhichIsA("BasePart")
+                if base then return base.CFrame, plot end
+            end
+            local nests = plot:FindFirstChild("Nests")
+            if nests then
+                local nest = nests:GetChildren()[1]
+                if nest then
+                    local base = nest:FindFirstChildWhichIsA("BasePart")
+                    if base then return base.CFrame, plot end
+                end
+            end
         end
     end
     return nil
@@ -135,11 +150,10 @@ local function findDropPromptAt(cf)
     for _, o in ipairs(workspace:GetDescendants()) do
         if o:IsA("ProximityPrompt") then
             local t = (o.ActionText .. " " .. o.ObjectText):lower()
-            if t:find("drop") or t:find("place") then
+            if t:find("drop") or t:find("place") or t:find("nest") then
                 local parent = o.Parent
                 if parent and parent:IsA("BasePart") then
-                    local d = (parent.Position - cf.Position).Magnitude
-                    if d < 50 then return o end
+                    if (parent.Position - cf.Position).Magnitude < 80 then return o end
                 end
             end
         end
@@ -169,22 +183,27 @@ local function dropAtTarget()
         task.wait(0.8)
         return true, "Dropped via prompt"
     end
-    return true, "Sampai di plot target"
+    -- diem di plot target 1.5 detik biar server detect
+    task.wait(1.5)
+    return true, "Diem di plot target"
 end
 
 local function backToRanch()
     local plots = workspace:FindFirstChild("Plots")
     if plots then
         for _, plot in ipairs(plots:GetChildren()) do
-            local owner = plot:FindFirstChild("Owner")
+            local data = plot:FindFirstChild("Data")
+            local owner = data and data:FindFirstChild("Owner")
             if owner and owner.Value == LP then
-                local cf = plot:GetPivot()
-                if M.mode == "Teleport" then
-                    tp(cf)
-                else
-                    idleMoveTo(cf.Position, 15)
+                local ok, cf = pcall(function() return plot:GetPivot() end)
+                if ok then
+                    if M.mode == "Teleport" then
+                        tp(cf)
+                    else
+                        idleMoveTo(cf.Position, 15)
+                    end
+                    task.wait(0.3)
                 end
-                task.wait(0.3)
                 return
             end
         end
