@@ -1,26 +1,40 @@
--- OR4CLE auto_farm.lua v6 — timer-aware + magma retrieve + idle/teleport
+-- OR4CLE auto_farm.lua v6 — timer-aware + magma + volcanic via door
 local M = {}
 local LP = game:GetService("Players").LocalPlayer
 
 M.enabled = false
-M.mode = "Teleport"           -- "Teleport" | "Idle"
+M.mode = "Teleport"
 M.minTier = "Common"
 M.returnToBase = true
 M.loopDelay = 1.0
 M.magmaAuto = false
-M.magmaMode = "Teleport"      -- "Teleport" | "Idle"
+M.magmaMode = "Teleport"
 M.idleSpeed = 250
+M.volcanicMode = true
 
-M.stats = { farmed = 0, delivered = 0, magma = 0, startedAt = 0 }
+M.stats = { farmed = 0, delivered = 0, magma = 0, volcanic = 0, startedAt = 0 }
+M._origWalkSpeed = 16
 
 local magma, idleFly, esp
 
 local TIER_ORDER = { Common=1, Rare=2, Epic=3, Legend=4, Mythic=5, Divine=6, Ethereal=7 }
 
+-- ============ WAYPOINTS VOLCANO ============
+local WAYPOINTS = {
+    Outside = CFrame.new(-4940, 41284, -3680),
+    Door    = CFrame.new(-4967, 41282, -3657),
+    Inside  = CFrame.new(-5300, 40930, -3580),
+}
+
 -- ============ HELPERS ============
 local function hrp()
     local c = LP.Character
     return c and c:FindFirstChild("HumanoidRootPart")
+end
+
+local function hum()
+    local c = LP.Character
+    return c and c:FindFirstChildOfClass("Humanoid")
 end
 
 local function tp(cf)
@@ -46,14 +60,14 @@ local function passFilter(tier)
     return (TIER_ORDER[tier] or 0) >= (TIER_ORDER[M.minTier] or 0)
 end
 
--- ============ GET BASE POS (Plot.Data.Owner) ============
+-- ============ BASE POS ============
 local function getBasePos()
     local plots = workspace:FindFirstChild("Plots")
     if plots then
         for _, plot in ipairs(plots:GetChildren()) do
             local data = plot:FindFirstChild("Data")
             local owner = data and data:FindFirstChild("Owner")
-            if owner and owner.Value == LP then
+            if owner and owner.Value and owner.Value == LP then
                 local ok, cf = pcall(function() return plot:GetPivot() end)
                 if ok then return cf.Position end
                 local eggs = plot:FindFirstChild("Eggs")
@@ -97,12 +111,81 @@ local function findBestEgg()
     return best
 end
 
+-- ============ WALK (MoveTo) ============
+local function walkTo(targetPos, timeout)
+    local h = hum()
+    if not h then return false end
+    h:MoveTo(targetPos)
+    local t = tick()
+    while tick() - t < (timeout or 5) do
+        local r = hrp()
+        if not r then break end
+        if (r.Position - targetPos).Magnitude < 6 then
+            h:MoveTo(r.Position)
+            return true
+        end
+        task.wait(0.1)
+    end
+    return false
+end
+
+-- ============ VOLCANO ENTER/EXIT ============
+local function enterVolcano()
+    -- save walk speed asli
+    local h = hum()
+    if h then
+        M._origWalkSpeed = h.WalkSpeed
+        h.WalkSpeed = 100  -- boost biar cepet
+    end
+
+    -- 1. TP ke luar pintu
+    tp(WAYPOINTS.Outside)
+    task.wait(0.4)
+
+    -- 2. noclip on (biar gak nyangkut)
+    if idleFly and idleFly.setNoclip then idleFly.setNoclip(true) end
+
+    -- 3. walk ke pintu (server deteksi masuk)
+    walkTo(WAYPOINTS.Door.Position, 4)
+    task.wait(0.3)
+
+    -- 4. walk ke dalam lair
+    walkTo(WAYPOINTS.Inside.Position, 6)
+    task.wait(0.3)
+
+    return true
+end
+
+local function exitVolcano()
+    -- 1. walk balik ke pintu (dari dalam)
+    walkTo(WAYPOINTS.Door.Position, 5)
+    task.wait(0.3)
+
+    -- 2. walk ke luar
+    walkTo(WAYPOINTS.Outside.Position, 4)
+    task.wait(0.3)
+
+    -- 3. TP lebih jauh keluar
+    tp(WAYPOINTS.Outside + Vector3.new(0, 0, -50))
+    task.wait(0.3)
+
+    -- 4. balikin walk speed
+    local h = hum()
+    if h then h.WalkSpeed = M._origWalkSpeed end
+
+    -- 5. noclip off
+    if idleFly and idleFly.setNoclip then idleFly.setNoclip(false) end
+end
+
 -- ============ PROMPTS ============
 local function findPickupPrompt(egg)
     for _, d in ipairs(egg:GetDescendants()) do
         if d:IsA("ProximityPrompt") and d.ActionText:lower():find("pick") then
             return d
         end
+    end
+    for _, d in ipairs(egg:GetDescendants()) do
+        if d:IsA("ProximityPrompt") then return d end
     end
 end
 
@@ -133,7 +216,7 @@ local function firePrompt(p)
     return true
 end
 
--- ============ HAS EGG? ============
+-- ============ HAS EGG ============
 local function hasEgg()
     local c = LP.Character
     if not c then return false end
@@ -165,66 +248,92 @@ local thread
 local function loop()
     M.stats.startedAt = tick()
     while M.enabled do
-        local egg = findBestEgg()
-        if egg then
-            local base = egg:FindFirstChild("EggBase") or egg:FindFirstChildWhichIsA("BasePart")
-            if base then
-                -- 1. gerak ke egg
-                moveTo(base.Position + Vector3.new(0, 2, 0), 5)
-                task.wait(0.2)
+        -- GUARD: kalau masih bawa egg, ke base dulu
+        if hasEgg() then
+            if M.returnToBase then
+                local basePos = getBasePos()
+                if basePos then
+                    moveTo(basePos, 8)
+                    task.wait(0.3)
+                    local dropP = findDropPromptAt(basePos)
+                    if dropP then
+                        firePrompt(dropP)
+                        task.wait(0.8)
+                    else
+                        task.wait(1.5)
+                    end
+                    M.stats.delivered = M.stats.delivered + 1
+                end
+            end
+            task.wait(M.loopDelay)
+        else
+            local egg = findBestEgg()
+            if egg then
+                local base = egg:FindFirstChild("EggBase") or egg:FindFirstChildWhichIsA("BasePart")
+                if base then
+                    local eggPos = base.Position
+                    local inVolcano = eggPos.Y > 40900
 
-                -- 2. pickup egg
-                local prompt = findPickupPrompt(egg)
-                if prompt then
-                    firePrompt(prompt)
-                    task.wait(0.4)
+                    -- 1. masuk volcano lewat pintu
+                    if inVolcano and M.volcanicMode then
+                        enterVolcano()
+                    end
 
-                    if hasEgg() then
-                        M.stats.farmed = M.stats.farmed + 1
+                    -- 2. gerak ke egg
+                    moveTo(eggPos + Vector3.new(0, 2, 0), 5)
+                    task.wait(0.2)
 
-                        -- 3. MAGMA MODE (kalau aktif)
-                        if M.magmaAuto and magma and magma.dropAndRetrieve then
-                            if magma.setMode then magma.setMode(M.magmaMode) end
-                            local okDrop = magma.dropAndRetrieve()
-                            if okDrop then M.stats.magma = M.stats.magma + 1 end
+                    -- 3. pickup
+                    local prompt = findPickupPrompt(egg)
+                    if prompt then
+                        firePrompt(prompt)
+                        task.wait(0.4)
 
-                            -- tunggu extra biar egg balik ke tangan
-                            task.wait(1)
+                        if hasEgg() then
+                            M.stats.farmed = M.stats.farmed + 1
+                            if inVolcano then M.stats.volcanic = M.stats.volcanic + 1 end
 
-                            -- kalau egg GAK balik, tunggu lagi
-                            local retry = 0
-                            while not hasEgg() and retry < 5 do
-                                task.wait(0.5)
-                                retry = retry + 1
-                            end
-                        end
-
-                        -- 4. bawa ke base
-                        if M.returnToBase then
-                            local basePos = getBasePos()
-                            if basePos then
-                                -- buffer 7 detik (timer 20, sisain 13 detik buat pickup + magma)
-                                moveTo(basePos, 8)
+                            -- 4. keluar volcano LEWAT PINTU (server validasi)
+                            if inVolcano and M.volcanicMode then
+                                exitVolcano()
                                 task.wait(0.3)
+                            end
 
-                                -- drop di base
-                                local dropP = findDropPromptAt(basePos)
-                                if dropP then
-                                    firePrompt(dropP)
-                                    task.wait(0.8)
-                                else
-                                    -- gak ada prompt, diem di base 1.5 detik
-                                    task.wait(1.5)
+                            -- 5. MAGMA MODE
+                            if M.magmaAuto and magma and magma.dropAndRetrieve then
+                                if magma.setMode then magma.setMode(M.magmaMode) end
+                                local okDrop = magma.dropAndRetrieve()
+                                if okDrop then M.stats.magma = M.stats.magma + 1 end
+                                task.wait(1)
+                                local retry = 0
+                                while not hasEgg() and retry < 5 do
+                                    task.wait(0.5)
+                                    retry = retry + 1
                                 end
+                            end
 
-                                M.stats.delivered = M.stats.delivered + 1
+                            -- 6. bawa ke base
+                            if M.returnToBase then
+                                local basePos = getBasePos()
+                                if basePos then
+                                    moveTo(basePos, 8)
+                                    task.wait(0.3)
+                                    local dropP = findDropPromptAt(basePos)
+                                    if dropP then
+                                        firePrompt(dropP)
+                                        task.wait(0.8)
+                                    else
+                                        task.wait(1.5)
+                                    end
+                                    M.stats.delivered = M.stats.delivered + 1
+                                end
                             end
                         end
                     end
                 end
             end
+            task.wait(M.loopDelay)
         end
-        task.wait(M.loopDelay)
     end
 end
 
@@ -238,6 +347,10 @@ end
 function M.stop()
     M.enabled = false
     thread = nil
+    if idleFly and idleFly.setNoclip then idleFly.setNoclip(false) end
+    -- restore walk speed
+    local h = hum()
+    if h then h.WalkSpeed = M._origWalkSpeed end
 end
 
 function M.toggle(on)
@@ -253,6 +366,7 @@ function M.setMagmaMode(m)
     M.magmaMode = m
     if magma and magma.setMode then magma.setMode(m) end
 end
+function M.setVolcanicMode(on) M.volcanicMode = on end
 function M.setIdleSpeed(s)
     M.idleSpeed = s
     if idleFly then idleFly.setSpeed(s) end
